@@ -215,6 +215,40 @@ const seed = async () => {
     })
   }
 
+  // One unpublished listing so the public site can be proven to 404 drafts for
+  // anonymous requests. Kept out of the published set above on purpose.
+  await payload.create({
+    collection: 'properties',
+    data: {
+      title: 'Draft property test',
+      slug: 'draft-property-test',
+      agent: agent.id,
+      propertyType: 'apartment',
+      price: 100000,
+      currency: 'EUR',
+      priceOnRequest: false,
+      areaGross: 60,
+      rooms: '1+1',
+      bedrooms: 1,
+      bathrooms: 1,
+      floor: 2,
+      orientation: ['S'],
+      listingType: 'sale',
+      status: 'available',
+      mortgageEligible: false,
+      area: areaIds['Astir'],
+      street: 'Rruga e Testit',
+      location: AREA_CENTERS['Astir'],
+      reference: `ATM-2026-${String(counter++).padStart(4, '0')}`,
+      verified: false,
+      featured: false,
+      gallery: [],
+      ownerName: 'Seed owner',
+      ownerPhone: '+355 68 50 89 999',
+      _status: 'draft',
+    },
+  })
+
   payload.logger.info('seed complete')
   process.exit(0)
 }

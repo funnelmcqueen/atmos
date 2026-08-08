@@ -1,0 +1,431 @@
+/*
+ * Public site styling for the properties slice.
+ *
+ * Every colour, space, radius and type value resolves to a token from
+ * tokens.css — no literal hex, no ad-hoc sizes (CLAUDE.md rule 8). This sheet
+ * loads only under /[locale], so it overrides the Payload template's global
+ * styles.css there without touching the admin or the blank homepage.
+ */
+@import './tokens.css';
+
+.site {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.6;
+}
+
+.site a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-4);
+  background: var(--header);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+
+.site-header__brand {
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  letter-spacing: var(--tracking-label);
+}
+
+.site-header__nav a {
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+
+.container {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-4) var(--space-7);
+}
+
+/* --- Page headers --------------------------------------------------------- */
+.page-head {
+  margin-bottom: var(--space-5);
+}
+.page-head__eyebrow {
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+  font-size: var(--step--1);
+  color: var(--muted);
+  margin: 0 0 var(--space-1);
+}
+.page-head__title {
+  font-family: var(--font-display);
+  font-size: var(--step-4);
+  font-weight: 400;
+  margin: 0;
+  line-height: 1.1;
+}
+.page-head__count {
+  color: var(--muted);
+  margin: var(--space-2) 0 0;
+}
+
+.section__heading {
+  font-family: var(--font-display);
+  font-size: var(--step-2);
+  font-weight: 400;
+  margin: 0 0 var(--space-3);
+}
+
+/* --- Card ----------------------------------------------------------------- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.card:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
+}
+.card__link {
+  display: block;
+}
+.card__media {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--surface-2);
+  display: flex;
+  align-items: flex-end;
+  padding: var(--space-2);
+}
+.card__type {
+  font-size: var(--step--1);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  color: var(--muted);
+}
+.card__body {
+  padding: var(--space-3);
+}
+.card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+.card__title {
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  font-weight: 400;
+  margin: 0 0 var(--space-1);
+}
+.card__location {
+  color: var(--muted);
+  font-size: var(--step--1);
+  margin: 0 0 var(--space-2);
+}
+.card__price-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+.card__price {
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+}
+.card__psqm,
+.card__meta {
+  color: var(--muted);
+  font-size: var(--step--1);
+  margin: 0;
+}
+
+/* --- Badges --------------------------------------------------------------- */
+.badge,
+.status-badge {
+  display: inline-block;
+  font-size: var(--step--1);
+  letter-spacing: var(--tracking-label);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+}
+.badge--accent {
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  background: var(--accent);
+}
+.status-badge {
+  color: var(--surface);
+  border: none;
+}
+.status-badge--available {
+  background: var(--status-available);
+}
+.status-badge--reserved {
+  background: var(--status-reserved);
+}
+.status-badge--sold {
+  background: var(--status-sold);
+}
+
+/* --- Pagination ----------------------------------------------------------- */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+.pagination__pages {
+  display: flex;
+  gap: var(--space-1);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pagination__page,
+.pagination__step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--muted);
+}
+.pagination__page--current {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+.pagination__step--disabled {
+  opacity: 0.4;
+}
+
+/* --- Detail --------------------------------------------------------------- */
+.detail {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--space-5);
+}
+@media (max-width: 900px) {
+  .detail {
+    grid-template-columns: 1fr;
+  }
+}
+.detail__main {
+  min-width: 0;
+}
+.detail__aside {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.detail-head__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+.detail-head__title {
+  font-family: var(--font-display);
+  font-size: var(--step-3);
+  font-weight: 400;
+  margin: 0 0 var(--space-1);
+  line-height: 1.15;
+}
+.detail-head__place {
+  color: var(--muted);
+  margin: 0 0 var(--space-3);
+}
+.detail-head__price-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.detail-head__price {
+  font-family: var(--font-display);
+  font-size: var(--step-3);
+}
+.detail-head__psqm {
+  color: var(--muted);
+}
+.detail-head__reference {
+  color: var(--muted);
+  font-size: var(--step--1);
+  margin: var(--space-2) 0 0;
+}
+
+.detail__block {
+  margin-top: var(--space-5);
+}
+
+.prose {
+  line-height: 1.7;
+}
+.prose p {
+  margin: 0 0 var(--space-3);
+}
+
+/* --- Gallery -------------------------------------------------------------- */
+.gallery__cover img,
+.gallery__thumb img {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+}
+.gallery__thumbs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.gallery--empty {
+  aspect-ratio: 3 / 2;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+}
+.gallery__placeholder {
+  font-family: var(--font-display);
+  color: var(--muted);
+  padding: var(--space-4);
+  text-align: center;
+}
+
+/* --- Specs ---------------------------------------------------------------- */
+.specs {
+  margin-top: var(--space-4);
+}
+.specs__heading {
+  font-size: var(--step-0);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  color: var(--muted);
+  margin: 0 0 var(--space-2);
+}
+.specs__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+}
+.specs__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--line);
+}
+.specs__label {
+  color: var(--muted);
+}
+
+/* --- Features ------------------------------------------------------------- */
+.features__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.features__item {
+  padding: var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+/* --- Location ------------------------------------------------------------- */
+.location__map-placeholder {
+  aspect-ratio: 16 / 9;
+  margin-top: var(--space-3);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.location__coords {
+  color: var(--muted);
+  font-size: var(--step--1);
+}
+
+/* --- Agent + buttons ------------------------------------------------------ */
+.agent,
+.doc-note {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+}
+.agent__name {
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  margin: 0 0 var(--space-1);
+}
+.agent__phone {
+  color: var(--muted);
+  margin: 0 0 var(--space-3);
+}
+.agent__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  letter-spacing: var(--tracking-label);
+  cursor: pointer;
+}
+.btn--primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+.dates {
+  color: var(--muted);
+  font-size: var(--step--1);
+  margin-top: var(--space-4);
+}
+
+/* --- Not found / empty ---------------------------------------------------- */
+.empty {
+  padding: var(--space-6) 0;
+  color: var(--muted);
+}

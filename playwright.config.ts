@@ -30,7 +30,11 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'], channel: 'chromium' },
+      // Use Playwright's bundled Chromium (headless shell) rather than the
+      // Chrome-for-Testing `chromium` channel: the branded chrome.exe needs a
+      // VC++ runtime that isn't present on every machine, and the bundled build
+      // is the portable default.
+      use: { ...devices['Desktop Chrome'] },
     },
   ],
   webServer: {
