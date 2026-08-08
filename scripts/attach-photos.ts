@@ -10,8 +10,11 @@
  *
  * Pairing was chosen by property type first (apartment→apartment, villa→villa,
  * shop→shop), then the closest listing by typology/size. The seeded land plot
- * has no counterpart — page-1 inventory holds zero land listings — so, per the
- * decision on this task, the land property is deleted rather than mismatched.
+ * has no counterpart — page-1 inventory holds zero land listings — and it is
+ * deliberately LEFT WITHOUT PHOTOS rather than deleted or mismatched. Land with
+ * no photography is a real case in the client's inventory, and it is what
+ * exercises the marked "no photo" placeholder (docs/12-design.md: a missing
+ * photo must not look like a bug). The empty state is tested, not avoided.
  *
  * Run once after `pnpm seed`. Re-running re-uploads (leaving orphan media); if
  * you need a clean slate, re-seed first.
@@ -37,8 +40,11 @@ const PAIRING: { property: string; listing: string; note: string }[] = [
   { property: 'apartament-2-1-ne-kompleksin-aura', listing: 'for-sale-21-apartment-near-delijorgji', note: 'apt 2+1 · ~105 m²' },
 ]
 
-/** Seeded property with no type match in the harvest — deleted, not mismatched. */
-const DELETE_PROPERTY_SLUG = 'truall-per-ndertim-golem'
+/**
+ * Seeded property with no type match in the harvest. Kept, and kept photo-less:
+ * it is the fixture for the card's "no photo" placeholder.
+ */
+const NO_PHOTO_PROPERTY_SLUG = 'truall-per-ndertim-golem'
 
 interface HarvestListing {
   slug: string
@@ -118,19 +124,24 @@ async function main() {
     console.log(`  ✓ gallery set (${mediaIds.length} photos), alt: "${alt}"`)
   }
 
-  // Remove the unmatchable land property.
+  // The unmatchable land property stays, without a gallery — that is the point.
+  // Confirm it is present and photo-less so the placeholder case is real data
+  // rather than an assumption.
   const { docs: land } = await payload.find({
     collection: 'properties',
-    where: { slug: { equals: DELETE_PROPERTY_SLUG } },
+    where: { slug: { equals: NO_PHOTO_PROPERTY_SLUG } },
     depth: 0,
     limit: 1,
     overrideAccess: true,
   })
   if (land[0]) {
-    await payload.delete({ collection: 'properties', id: land[0].id, overrideAccess: true })
-    console.log(`\n🗑  deleted land property: ${land[0].title}`)
+    const photos = land[0].gallery?.length ?? 0
+    console.log(
+      `\n📷 kept without photos: ${land[0].title} (gallery: ${photos})` +
+        (photos > 0 ? '  ⚠ expected 0 — placeholder case will not render' : ''),
+    )
   } else {
-    console.log(`\n(no land property ${DELETE_PROPERTY_SLUG} to delete — already gone)`)
+    console.log(`\n⚠ land property ${NO_PHOTO_PROPERTY_SLUG} not found — re-run pnpm seed`)
   }
 
   console.log(`\n✓ done. ${attachedProps} properties, ${attachedPhotos} photos attached.`)
