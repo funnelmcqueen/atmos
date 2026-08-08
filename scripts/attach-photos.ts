@@ -38,6 +38,19 @@ const PAIRING: { property: string; listing: string; note: string }[] = [
   { property: 'apartament-2-1-ne-ekspozita-building', listing: 'apartment-for-sale-21-ekspozita-building', note: 'apt 2+1 · 177 m² · same building' },
   { property: 'dyqan-ne-univers-city-80-m', listing: 'shop---business-premises-for-rent-in-astir', note: 'shop (only shop in inventory)' },
   { property: 'apartament-2-1-ne-kompleksin-aura', listing: 'for-sale-21-apartment-near-delijorgji', note: 'apt 2+1 · ~105 m²' },
+
+  // The eight apartments the seed gained later (imported from inventory.json to
+  // push the published set past one page). The pairing list was written against
+  // the original eight properties and never caught up, which is why they showed
+  // the placeholder. Most match their harvested counterpart by street name.
+  { property: 'apartament-1-1-me-qira-ne-astir', listing: 'for-rent-11-apartment-astir', note: 'apt 1+1 · rent · Astir — same street' },
+  { property: 'apartament-1-1-me-qira-rruga-dritan-hoxha', listing: 'for-rent-11-apartment-dritan-hoxha-street', note: 'apt 1+1 · rent · Dritan Hoxha — same street' },
+  { property: 'apartament-1-1-me-qira-rruga-xhanfize-keko', listing: 'apartment-11-for-rent-xhanfize-keko-street', note: 'apt 1+1 · rent · Xhanfize Keko — same street' },
+  { property: 'apartament-1-1-ne-shitje-te-vasil-shanto', listing: 'for-sale-apartment-11-vasil-shanto', note: 'apt 1+1 · sale · Vasil Shanto — same street' },
+  { property: 'apartament-1-1-ne-shitje-te-vasil-shanto-135000-euro', listing: 'for-sale-apartment-11-vasil-shanto-135000-euro', note: 'apt 1+1 · sale · same street and price' },
+  { property: 'apartament-2-1-me-qira-afer-stacionit-te-trenit', listing: 'for-rent-21-apartment-train-station', note: 'apt 2+1 · rent · train station — same area' },
+  { property: 'apartament-2-1-me-qira-bulevardi-zogu-i', listing: 'for-rent-21-apartment-paris-municipality', note: 'apt 2+1 · rent · closest 2+1 rental left' },
+  { property: 'apartament-2-1-me-qira-rruga-tish-dahia', listing: 'for-rent-apartment-212-paris-commune', note: 'apt 2+1+2 · rent · closest typology left' },
 ]
 
 /**
@@ -77,6 +90,14 @@ async function main() {
     const property = docs[0]
     if (!property) {
       console.warn(`⚠ seeded property not found: ${pair.property} — skipping`)
+      continue
+    }
+
+    // Already photographed — leave it alone. Re-uploading would create a second
+    // set of media and orphan the first, so the script can be re-run to fill
+    // only what is missing (adding a pairing no longer means re-uploading all).
+    if ((property.gallery?.length ?? 0) > 0) {
+      console.log(`= ${property.title} — already has ${property.gallery?.length} photos, skipping`)
       continue
     }
 
