@@ -23,8 +23,26 @@ import { PropertyCard } from './PropertyCard'
  * with replaceState, so a pan is shareable but never re-runs the server list.
  */
 
+/** Opening view when the URL carries no map params: Tiranë, city scale. */
 const DEFAULT_CENTER: [number, number] = [19.8187, 41.3275] // Tiranë
 const DEFAULT_ZOOM = 12
+
+/**
+ * Panning is held to Albania, padded past the borders on every side
+ * ([west, south], [east, north]). It is wide enough that a user can drag from
+ * Tiranë out to Durrës, Golem, Vlorë or Dhërmi — every seeded coastal area —
+ * without the map fighting back, while still stopping a stray drag from ending
+ * up mid-Adriatic with an empty result set.
+ *
+ * "Use my location" flies inside these bounds too, so a visitor outside the
+ * country lands at the nearest edge rather than off-map. That is the right
+ * trade for a site that only lists Albanian property.
+ */
+const MAX_BOUNDS: [[number, number], [number, number]] = [
+  [19.0, 39.5],
+  [21.2, 42.7],
+]
+
 const CLUSTER_MAX_ZOOM = 12 // cluster below zoom 13 (docs/06)
 const FETCH_DEBOUNCE_MS = 300
 
@@ -73,6 +91,7 @@ export default function MapView({
       style: `https://api.maptiler.com/maps/streets-v2/style.json?key=${mapKey}`,
       center: initialCenter ?? DEFAULT_CENTER,
       zoom: initialZoom ?? DEFAULT_ZOOM,
+      maxBounds: MAX_BOUNDS,
       attributionControl: { compact: true },
     })
     mapRef.current = map
