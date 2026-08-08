@@ -80,10 +80,15 @@ No Redux, no state library — server components and URL search params carry sta
 A task is not finished until all of these pass:
 
 ```bash
-pnpm typecheck    # tsc --noEmit, zero errors
+pnpm typecheck     # tsc --noEmit, zero errors
 pnpm lint
-pnpm test:e2e     # Playwright smoke tests
+pnpm check:routes  # builds, then asserts every route's rendering mode
+pnpm test:e2e      # Playwright smoke tests
 ```
+
+`check:routes` runs the production build, so it also catches anything that only
+fails there. Adding a page makes it fail until the route is declared in
+`scripts/route-modes.ts` — that is one deliberate edit, not a nuisance.
 
 Then commit. One commit per feature slice, present-tense message
 ("add property detail page"). Never bundle unrelated changes.

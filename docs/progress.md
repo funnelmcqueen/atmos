@@ -41,6 +41,14 @@
 
 ---
 
+## Route-mode gate — 9 Aug 2026
+
+- **Built:** `pnpm check:routes` — a fourth DoD gate beside `typecheck`, `lint` and `test:e2e`. It runs the production build, parses the route table, and fails if any route renders differently from `scripts/route-modes.ts`, which is the single place expectations live (adding a page = adding one line there). Fails in both directions, so the list cannot rot: an undeclared route and a declared-but-missing route are both red. Pass a build log path to skip the rebuild in CI. All four failure branches were tested against doctored logs — wrong mode, unlisted route, vanished route, unparseable output — and each exits 1 with a message naming the fix.
+- **Learned:** The gate is worth less than expected as a defence against pages silently going dynamic, because `cacheComponents` already blocks that at compile time. Tried `export const dynamic = 'force-dynamic'` on the project page expecting a `ƒ` in the table; the build rejected the export outright, same as `revalidate`. So the compiler — not this script — is what stops the model being broken from inside a page. What the script actually covers is what the compiler cannot know: a **new route nobody reviewed**, a route that **disappeared**, and **upgrade drift** where a Next release changes how an existing route renders without erroring. The header comment in `scripts/route-modes.ts` says this plainly rather than overselling it, and also records what it does *not* catch — a page kept at `ppr` by wrapping nearly everything in `<Suspense>` still reports `ppr` while prerendering a hollow shell.
+- **Verified:** `typecheck`, `lint` (0 errors), `check:routes` (15 routes), `test:e2e` 33/33.
+
+---
+
 # Known quirks
 
 Things that look like bugs, are not, and cost someone an hour already. Add to

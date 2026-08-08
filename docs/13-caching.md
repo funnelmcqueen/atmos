@@ -120,6 +120,28 @@ a crawler sees the whole development regardless of how the table is sorted. Keep
 request-independent content in the shell, and never build structured data from
 the filtered view.
 
+## The gate
+
+`pnpm check:routes` builds the app, parses the route table, and fails if any
+route renders differently from what `scripts/route-modes.ts` declares. It runs
+alongside `typecheck` and `lint` in the definition of done.
+
+**Adding a page means adding a line to `scripts/route-modes.ts`.** That is the
+only place the expectations live. The check fails in both directions — an
+undeclared route and a declared route that no longer exists both go red — so the
+list cannot drift out of date.
+
+If a page you expected to be `ppr` reports `dynamic`, fix the page. Changing the
+expectation to match is the one thing that defeats the point.
+
+Its limits are worth knowing: the compiler already rejects `revalidate` exports,
+`dynamic` exports and uncached reads outside Suspense, so this gate mostly guards
+against unreviewed new routes and against a Next upgrade quietly changing how an
+existing route renders. It checks the *mode*, not the quality of the shell — a
+page wrapped almost entirely in `<Suspense>` still reports `ppr` while
+prerendering almost nothing. When you change a page's boundaries, look at what
+actually landed in `.next/server/app/**.html`.
+
 ## Rules of thumb
 
 - A page's shell should render without knowing anything about the request.
