@@ -166,6 +166,21 @@ const seed = async () => {
     { title: 'Dyqan në Univers City, 80 m²', type: 'shop', area: 'Univers City', street: 'Rruga Gryka e Kaçanikut', rooms: '1', gross: 79.6, price: 206960, currency: 'EUR', listing: 'sale', status: 'available', floor: 0, mortgage: false, phase: 'finished' },
     { title: 'Truall për ndërtim, Golem', type: 'land', area: 'Golem', street: 'Afër Fafa', gross: 800, price: 135000, currency: 'EUR', listing: 'sale', status: 'available', mortgage: true },
     { title: 'Apartament 2+1 në Kompleksin Aura', type: 'apartment', area: 'Laprakë', street: 'Rruga Dritan Hoxha', rooms: '2+1', gross: 105.6, price: 184800, currency: 'EUR', listing: 'sale', status: 'sold', floor: 2, mortgage: true, phase: 'finished' },
+
+    // Eight more real apartments imported from scripts/harvest/inventory.json
+    // (the client's live duashpi.al inventory). Real price, area m², rooms,
+    // floor and street are preserved; each is bucketed under an existing seeded
+    // Tiranë neighbourhood so no coordinates are invented. These bring the
+    // published set to 16 properties / 13 apartments, so ?tipi=apartment
+    // paginates past the 12-per-page limit.
+    { title: 'Apartament 1+1 në shitje te Vasil Shanto', type: 'apartment', area: 'Qendra', street: 'Rruga Viktor Eftimiu', rooms: '1+1', gross: 60, price: 125000, currency: 'EUR', listing: 'sale', status: 'available', floor: 5, mortgage: true, phase: 'existing' },
+    { title: 'Apartament 1+1 në shitje te Vasil Shanto, 135000 euro', type: 'apartment', area: 'Qendra', street: 'Rruga Viktor Eftimiu', rooms: '1+1', gross: 70, price: 135000, currency: 'EUR', listing: 'sale', status: 'available', floor: 6, mortgage: true, phase: 'existing' },
+    { title: 'Apartament 1+1 me qira në Astir', type: 'apartment', area: 'Astir', street: 'Astir', rooms: '1+1', gross: 66, price: 600, currency: 'EUR', listing: 'rent', status: 'available', floor: 9, mortgage: false, phase: 'finished' },
+    { title: 'Apartament 1+1 me qira, Rruga Dritan Hoxha', type: 'apartment', area: 'Laprakë', street: 'Rruga Dritan Hoxha', rooms: '1+1', gross: 69, price: 520, currency: 'EUR', listing: 'rent', status: 'available', floor: 5, mortgage: false, phase: 'finished' },
+    { title: 'Apartament 2+1 me qira, Rruga Tish Dahia', type: 'apartment', area: 'Laprakë', street: 'Rruga Tish Dahia', rooms: '2+1', gross: 95, price: 750, currency: 'EUR', listing: 'rent', status: 'available', floor: 4, mortgage: false, phase: 'finished' },
+    { title: 'Apartament 2+1 me qira, Bulevardi Zogu I', type: 'apartment', area: 'Qendra', street: 'Bulevardi Zogu I', rooms: '2+1', gross: 85, price: 550, currency: 'EUR', listing: 'rent', status: 'available', floor: 4, mortgage: false, phase: 'finished' },
+    { title: 'Apartament 1+1 me qira, Rruga Xhanfize Keko', type: 'apartment', area: 'Qendra', street: 'Rruga Xhanfize Keko', rooms: '1+1', gross: 70, price: 600, currency: 'EUR', listing: 'rent', status: 'available', floor: 1, mortgage: false, phase: 'finished' },
+    { title: 'Apartament 2+1 me qira, afër Stacionit të Trenit', type: 'apartment', area: 'Qendra', street: 'Rruga Panorama', rooms: '2+1', gross: 90, price: 700, currency: 'EUR', listing: 'rent', status: 'available', floor: 12, mortgage: false, phase: 'finished' },
   ] as const
 
   // Properties require an owning agent (access.updateOwnListing). The seed

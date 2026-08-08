@@ -13,6 +13,7 @@
  */
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import type { FilterValues, SortKey } from '@/lib/search-params'
 
 /** One card's worth of a listing, camelCased from the view's snake_case. */
 export interface ListingCard {
@@ -86,21 +87,167 @@ export interface PropertyPage {
   total: number
 }
 
-/** One page of standalone properties: featured first, then newest. */
-export const getPropertyPage = async (page: number, perPage: number): Promise<PropertyPage> => {
+/** A card's cover photo. */
+export interface CardThumb {
+  url: string
+  alt: string
+}
+
+/**
+ * Cover thumbnails for a page of property cards, keyed by slug.
+ *
+ * The card DATA still comes from `listing_index` (rule 4). The cover image is a
+ * presentational enrichment the view doesn't carry, so it's resolved here in
+ * one batched read of the `properties` collection, keyed off the source ids the
+ * view already returned. Uses the pre-generated `card` image size (800×600).
+ * Units aren't covered — only standalone properties have galleries in v1.
+ */
+export const getCoverThumbnails = async (
+  cards: ListingCard[],
+): Promise<Map<string, CardThumb>> => {
+  const map = new Map<string, CardThumb>()
+  const ids = cards.filter((c) => c.source === 'property').map((c) => c.sourceId)
+  if (ids.length === 0) return map
+
+  const payload = await getPayload({ config })
+  const { docs } = await payload.find({
+    collection: 'properties',
+    where: { id: { in: ids } },
+    depth: 1, // populate gallery[].image so the cover URL is available
+    limit: ids.length,
+    overrideAccess: false,
+  })
+
+  for (const p of docs) {
+    const cover = p.gallery?.[0]?.image
+    if (cover && typeof cover === 'object' && cover.url) {
+      map.set(p.slug, {
+        url: cover.sizes?.card?.url ?? cover.url,
+        alt: cover.alt ?? p.title,
+      })
+    }
+  }
+  return map
+}
+
+/** A filterable facet: an area to narrow by, with the slug the URL carries. */
+export interface AreaFacet {
+  id: number
+  slug: string
+  name: string
+}
+
+export interface ListingFacets {
+  areas: AreaFacet[]
+  rooms: string[]
+}
+
+/**
+ * The option lists the filter panel offers, derived from what is actually
+ * published so the panel never shows a filter that returns nothing. Areas come
+ * from the ids present in `listing_index`; their slugs (which the `zona` param
+ * uses) are not in the view, so they are resolved from the `areas` collection.
+ * Rooms are the distinct raw strings ("1+1", "2+1") standalone listings carry.
+ */
+export const getListingFacets = async (): Promise<ListingFacets> => {
   const pool = await getPool()
-  const offset = (page - 1) * perPage
+
+  const [areaRows, roomRows] = await Promise.all([
+    pool.query(
+      `SELECT DISTINCT area_id, area_name
+         FROM listing_index
+        WHERE source = 'property' AND area_id IS NOT NULL
+        ORDER BY area_name`,
+    ),
+    pool.query(
+      `SELECT DISTINCT rooms
+         FROM listing_index
+        WHERE source = 'property' AND rooms IS NOT NULL
+        ORDER BY rooms`,
+    ),
+  ])
+
+  const areaIds = areaRows.rows.map((r) => numReq(r.area_id))
+  const slugById = new Map<number, string>()
+  if (areaIds.length > 0) {
+    const payload = await getPayload({ config })
+    const { docs } = await payload.find({
+      collection: 'areas',
+      where: { id: { in: areaIds } },
+      limit: areaIds.length,
+      depth: 0,
+    })
+    for (const a of docs) slugById.set(a.id, a.slug)
+  }
+
+  const areas: AreaFacet[] = areaRows.rows
+    .map((r) => {
+      const id = numReq(r.area_id)
+      const slug = slugById.get(id)
+      return slug ? { id, slug, name: String(r.area_name) } : null
+    })
+    .filter((a): a is AreaFacet => a !== null)
+
+  return { areas, rooms: roomRows.rows.map((r) => String(r.rooms)) }
+}
+
+/** ORDER BY clause per sort key. Null price_per_sqm and price_eur sort last,
+ *  never first (docs/06); every sort tiebreaks on source_id for a stable page. */
+const ORDER_BY: Record<SortKey, string> = {
+  newest: 'featured DESC, published_at DESC NULLS LAST, source_id DESC',
+  'price-asc': 'price_eur ASC NULLS LAST, source_id DESC',
+  'price-desc': 'price_eur DESC NULLS LAST, source_id DESC',
+  'per-sqm': 'price_per_sqm ASC NULLS LAST, source_id DESC',
+}
+
+/**
+ * One page of standalone properties matching `filters`, sorted per `filters.sort`.
+ *
+ * The WHERE is built from validated `FilterValues`, so every clause is
+ * parameterized — no user string reaches the SQL. `area` is a slug in the URL;
+ * the caller resolves it to `areaId` against the facets (an unresolved slug
+ * yields no rows, which is the right answer for a bad area). Price filters run
+ * on `price_eur`, size on `area_gross` — the same columns the view sorts on, so
+ * mixed-currency ranges behave (docs/06).
+ */
+export const searchListings = async (
+  filters: FilterValues,
+  areaId: number | null,
+  perPage: number,
+): Promise<PropertyPage> => {
+  const pool = await getPool()
+
+  const clauses: string[] = [`source = 'property'`]
+  const params: unknown[] = []
+  const add = (sql: string, value: unknown) => {
+    params.push(value)
+    clauses.push(sql.replace('$?', `$${params.length}`))
+  }
+
+  if (filters.propertyType) add('property_type = $?', filters.propertyType)
+  if (areaId !== null) add('area_id = $?', areaId)
+  if (filters.listingType) add('listing_type = $?', filters.listingType)
+  if (filters.priceMin !== null) add('price_eur >= $?', filters.priceMin)
+  if (filters.priceMax !== null) add('price_eur <= $?', filters.priceMax)
+  if (filters.areaMin !== null) add('area_gross >= $?', filters.areaMin)
+  if (filters.areaMax !== null) add('area_gross <= $?', filters.areaMax)
+  if (filters.rooms) add('rooms = $?', filters.rooms)
+  if (filters.mortgage) clauses.push('mortgage_eligible = TRUE')
+  if (filters.status) add('status = $?', filters.status)
+
+  const where = clauses.join(' AND ')
+  const offset = (filters.page - 1) * perPage
 
   const [rows, count] = await Promise.all([
     pool.query(
       `SELECT ${CARD_COLUMNS}
          FROM listing_index
-        WHERE source = 'property'
-        ORDER BY featured DESC, published_at DESC NULLS LAST, source_id DESC
-        LIMIT $1 OFFSET $2`,
-      [perPage, offset],
+        WHERE ${where}
+        ORDER BY ${ORDER_BY[filters.sort]}
+        LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+      [...params, perPage, offset],
     ),
-    pool.query(`SELECT COUNT(*)::int AS total FROM listing_index WHERE source = 'property'`),
+    pool.query(`SELECT COUNT(*)::int AS total FROM listing_index WHERE ${where}`, params),
   ])
 
   return { cards: rows.rows.map(toCard), total: Number(count.rows[0]?.total ?? 0) }
