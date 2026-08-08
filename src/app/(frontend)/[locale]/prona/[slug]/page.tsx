@@ -195,7 +195,14 @@ export default async function PropertyDetailPage({
           </div>
 
           <div className="detail__block">
-            <LocationPanel areaName={areaName} street={property.street ?? null} location={property.location} />
+            {/* Marker colour follows the listing type, matching the search map
+                (docs/06) — the panel now carries a real single-marker map. */}
+            <LocationPanel
+              areaName={areaName}
+              street={property.street ?? null}
+              location={property.location}
+              tone={property.listingType === 'rent' ? 'rent' : 'sale'}
+            />
           </div>
         </div>
 

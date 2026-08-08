@@ -180,6 +180,84 @@ export const toSearchParams = (
   return sp
 }
 
+/* --- Unit table (project page) -------------------------------------------- */
+
+/**
+ * The unit table on /[locale]/projekte/[slug] sorts and filters through the URL
+ * on the same terms as the property search: a `<form method="get">` and plain
+ * links, no client JS, so a sorted or filtered table is shareable and
+ * server-rendered.
+ *
+ * It is deliberately a separate shape from `FilterValues` rather than a reuse
+ * of it. The table sorts by FLOOR, which property search does not offer, and it
+ * filters on only two things (status, rooms) because everything else — area,
+ * type, developer — is fixed by the project the visitor is already looking at.
+ * Folding it into the search filters would mean a dozen fields that can never
+ * apply here, and a sort union where half the options are wrong on each page.
+ */
+export const UNIT_SORT_KEYS = ['floor-asc', 'floor-desc', 'price-asc', 'price-desc'] as const
+export type UnitSortKey = (typeof UNIT_SORT_KEYS)[number]
+
+/** Floor ascending — a building read from the ground up (docs/03). */
+export const DEFAULT_UNIT_SORT: UnitSortKey = 'floor-asc'
+
+export interface UnitFilterValues {
+  status: string | null
+  rooms: string | null // raw string, e.g. "2+1"
+  sort: UnitSortKey
+}
+
+type UnitFieldKey = 'status' | 'rooms' | 'sort'
+
+const UNIT_PARAM_NAMES: Record<Locale, Record<UnitFieldKey, string>> = {
+  sq: { status: 'statusi', rooms: 'dhoma', sort: 'rendit' },
+  en: { status: 'status', rooms: 'rooms', sort: 'sort' },
+}
+
+/** The localized query-param name for a unit-table field. */
+export const unitParamName = (locale: Locale, field: UnitFieldKey): string =>
+  UNIT_PARAM_NAMES[locale][field]
+
+export const parseUnitParams = (locale: Locale, raw: RawParams): UnitFilterValues => {
+  const get = (field: UnitFieldKey) => first(raw[unitParamName(locale, field)])
+
+  return {
+    status: oneOf(get('status'), STATUSES),
+    rooms: get('rooms') ?? null,
+    sort: oneOf(get('sort'), UNIT_SORT_KEYS) ?? DEFAULT_UNIT_SORT,
+  }
+}
+
+/**
+ * Serialize unit-table state back to localized params, emitting only what is
+ * active so the default view of a project page is a bare, canonical URL.
+ * `override` swaps one field — the sortable column headers are links built with
+ * it, which is why this returns the full param string rather than mutating.
+ */
+export const toUnitParams = (
+  locale: Locale,
+  v: UnitFilterValues,
+  override: Partial<UnitFilterValues> = {},
+): URLSearchParams => {
+  const merged = { ...v, ...override }
+  const sp = new URLSearchParams()
+
+  if (merged.status) sp.set(unitParamName(locale, 'status'), merged.status)
+  if (merged.rooms) sp.set(unitParamName(locale, 'rooms'), merged.rooms)
+  if (merged.sort !== DEFAULT_UNIT_SORT) sp.set(unitParamName(locale, 'sort'), merged.sort)
+
+  return sp
+}
+
+/**
+ * True when the table is narrowed or re-sorted. The project page itself stays
+ * indexable either way — unlike a search result set, a sorted unit table is the
+ * same page with the same content, not a thin near-duplicate permutation of a
+ * catalogue. This drives the "clear" affordance, not robots.
+ */
+export const hasActiveUnitFilters = (v: UnitFilterValues): boolean =>
+  v.status !== null || v.rooms !== null || v.sort !== DEFAULT_UNIT_SORT
+
 /* --- Map view state ------------------------------------------------------- */
 
 /**

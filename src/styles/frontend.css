@@ -488,13 +488,8 @@
 }
 
 /* --- Location ------------------------------------------------------------- */
-.location__map-placeholder {
-  aspect-ratio: 16 / 9;
-  margin-top: var(--space-3);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-}
+/* The map placeholder that lived here is gone — LocationPanel renders a real
+   single-marker map now (see "Single-marker map" below). */
 .location__coords {
   color: var(--muted);
   font-size: var(--step--1);
@@ -733,39 +728,214 @@
   text-align: right;
 }
 
-/* --- Companies: project list (placeholder for the projects slice) --------- */
-.project-list {
-  list-style: none;
+/* --- Projects: card ------------------------------------------------------- */
+/* Composes .card — only the differences live here. The phase pill sits where a
+   listing card's type pill sits, so a mixed grid still scans down one column. */
+.project-card .card__type {
+  background: var(--type-project);
+  color: var(--surface);
+}
+
+/* --- Projects: detail ----------------------------------------------------- */
+.detail-head__parent {
+  color: var(--muted);
+  font-size: var(--step--1);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  margin: 0 0 var(--space-1);
+}
+.detail-head__tagline {
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+  color: var(--muted);
+  margin: var(--space-2) 0 0;
+}
+.detail-head__availability:empty {
+  display: none;
+}
+.detail-head__availability {
+  margin: var(--space-2) 0 0;
+  color: var(--status-available);
+  font-size: var(--step-0);
+}
+
+.site-plan {
   margin: 0;
-  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+}
+.site-plan img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.developer-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+}
+.developer-card__link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  text-decoration: none;
+  color: inherit;
+}
+.developer-card__link:hover .developer-card__name {
+  text-decoration: underline;
+}
+.developer-card__logo {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.developer-card__logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.developer-card__name {
+  font-family: var(--font-display);
+  font-size: var(--step-1);
+}
+.developer-card__brochure {
+  display: inline-block;
+  margin-top: var(--space-3);
+}
+
+/* --- Projects: unit table ------------------------------------------------- */
+.unit-table-block {
+  margin: 0;
+}
+.unit-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.unit-filters__field {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 2px;
 }
-.project-list__item {
-  padding: var(--space-3);
+.unit-filters__submit {
+  /* 44px minimum tap target — agents use this standing in apartments
+     (docs/12). */
+  min-height: 44px;
+}
+
+/* The table scrolls inside its own box rather than pushing the page sideways.
+   Seven columns of real data do not fit a phone, and dropping columns to make
+   them fit would remove exactly the numbers people came to compare. */
+.unit-table__scroll {
+  overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
 }
-.project-list__head {
+.unit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--step-0);
+}
+.unit-table__caption {
+  /* Present for screen readers; the visible <h2> above already names the block. */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.unit-table__th {
+  text-align: left;
+  font-weight: 400;
+  font-size: var(--step--1);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.unit-table__th--num {
+  text-align: right;
+}
+.unit-table__th--sortable {
+  padding: 0;
+}
+.unit-table__sort {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-1);
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  color: inherit;
+  text-decoration: none;
 }
-.project-list__name {
-  font-family: var(--font-display);
-  font-size: var(--step-1);
+.unit-table__sort:hover {
+  color: var(--text);
 }
-.project-list__meta {
+.unit-table__arrow {
+  font-size: var(--step-0);
+}
+.unit-table__th[aria-sort='ascending'] .unit-table__sort,
+.unit-table__th[aria-sort='descending'] .unit-table__sort {
+  color: var(--text);
+}
+
+.unit-table__cell {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.unit-table__cell--num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.unit-table__cell--price {
+  /* The accent marks exactly two things: the price and the primary action
+     (docs/12). In this table the price column is the price. */
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.unit-table__cell--code a {
+  color: inherit;
+}
+.unit-table__row:last-child .unit-table__cell {
+  border-bottom: none;
+}
+.unit-table__row:hover {
+  background: var(--surface-2);
+}
+
+/* Sold units stay in the table — muted, never hidden. Visible scarcity is what
+   makes the page persuasive (docs/03, docs/12). */
+.unit-table__row--sold .unit-table__cell {
   color: var(--muted);
-  font-size: var(--step--1);
-  margin: var(--space-1) 0 0;
 }
-.project-list__units {
+.unit-table__row--sold .unit-table__cell--price {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.unit-table__available {
+  color: var(--status-available);
   font-size: var(--step--1);
-  margin: var(--space-1) 0 0;
 }
 
 /* --- Companies: areas + articles ------------------------------------------ */
@@ -866,6 +1036,35 @@
   color: var(--status-sold);
   font-size: var(--step--1);
   box-shadow: var(--shadow);
+}
+
+/* --- Single-marker map (property, project, unit) -------------------------- */
+/* Shorter than the search map: it answers "where is this" in one glance, and it
+   sits inside a detail page that has more to say below it. */
+.point-map,
+.point-map--loading,
+.point-map--error {
+  height: 320px;
+  margin: var(--space-3) 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+@media (max-width: 700px) {
+  .point-map,
+  .point-map--loading,
+  .point-map--error {
+    height: 240px;
+  }
+}
+.point-map--error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  color: var(--muted);
+  text-align: center;
 }
 
 /* Popup: let the reused PropertyCard supply the surface; the MapLibre chrome

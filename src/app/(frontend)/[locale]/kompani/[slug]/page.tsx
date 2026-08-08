@@ -5,22 +5,15 @@ import { notFound } from 'next/navigation'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 import {
   getCompanyProfile,
-  getCompanyProjects,
   getCompanyArticles,
   getCompanySlugs,
-  type CompanyProject,
 } from '@/lib/companies'
-import { getCompanyUnits } from '@/lib/listings'
-import {
-  isLocale,
-  t,
-  DEFAULT_LOCALE,
-  PROJECT_PHASE_LABELS,
-  type Locale,
-} from '@/messages/sq'
-import { formatDate } from '@/lib/format'
+import { getCompanyProjectCards, type ProjectListItem } from '@/lib/projects'
+import { getCompanyUnits, getProjectUnitStats, listingHref } from '@/lib/listings'
+import { isLocale, t, DEFAULT_LOCALE, type Locale } from '@/messages/sq'
 import { buildAlternates, breadcrumbLd, organizationLd, localeUrl } from '@/lib/seo'
 import { PropertyCard } from '@/components/PropertyCard'
+import { ProjectCard } from '@/components/ProjectCard'
 import { Badge } from '@/components/Badge'
 import { JsonLd } from '@/components/JsonLd'
 
@@ -59,39 +52,25 @@ export async function generateMetadata({
 }
 
 /**
- * Inline project block — deliberately not a reusable card and not linked.
- * TODO(projects-slice): the projects slice owns the project detail route and a
- * shared project card; when it lands, replace this block with that card and
- * link each project to /[locale]/projekte/[slug].
+ * A company's projects, as the same ProjectCard the projects index uses — one
+ * component, one file (docs/12). Replaces the inline, unlinked block this page
+ * carried while units and projects had no routes of their own.
  */
-function ProjectList({ projects, locale }: { projects: CompanyProject[]; locale: Locale }) {
+function ProjectGrid({
+  projects,
+  stats,
+  locale,
+}: {
+  projects: ProjectListItem[]
+  stats: Map<number, import('@/lib/listings').ProjectUnitStats>
+  locale: Locale
+}) {
   return (
-    <ul className="project-list">
+    <div className="grid">
       {projects.map((p) => (
-        <li className="project-list__item" key={p.slug}>
-          <div className="project-list__head">
-            <span className="project-list__name">{p.name}</span>
-            <Badge>{PROJECT_PHASE_LABELS[p.phase ?? ''] ?? p.phase}</Badge>
-          </div>
-          <p className="project-list__meta">
-            {[
-              p.areaName,
-              p.completionDate ? `${t.company.completion}: ${formatDate(p.completionDate, locale)}` : null,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </p>
-          {p.unitTypes.length > 0 && (
-            <p className="project-list__units">
-              {p.unitTypes
-                .map((u) => [u.rooms, u.availableCount ? `${u.availableCount}×` : null].filter(Boolean).join(' '))
-                .filter(Boolean)
-                .join(' · ')}
-            </p>
-          )}
-        </li>
+        <ProjectCard key={p.slug} project={p} stats={stats.get(p.id) ?? null} locale={locale} />
       ))}
-    </ul>
+    </div>
   )
 }
 
@@ -109,10 +88,16 @@ export default async function CompanyProfilePage({
   const { company, logoUrl, coverUrl, areaNames } = profile
 
   const [projects, units, articles] = await Promise.all([
-    getCompanyProjects(company.id),
+    getCompanyProjectCards(company.id, locale),
     getCompanyUnits(company.id),
     getCompanyArticles(company.id, locale),
   ])
+
+  // One batched aggregate across both project groups, so a card's "from" price
+  // and available count come from the same read model as its unit table.
+  const projectStats = await getProjectUnitStats(
+    [...projects.active, ...projects.completed].map((p) => p.id),
+  )
 
   const url = localeUrl(locale, `/kompani/${slug}`)
   const socials = (company.socials ?? []).map((s) => s.url).filter(Boolean)
@@ -166,7 +151,7 @@ export default async function CompanyProfilePage({
           <section className="detail__block">
             <h2 className="section__heading">{t.company.activeProjects}</h2>
             {projects.active.length > 0 ? (
-              <ProjectList projects={projects.active} locale={locale} />
+              <ProjectGrid projects={projects.active} stats={projectStats} locale={locale} />
             ) : (
               <p className="empty">{t.company.noProjects}</p>
             )}
@@ -175,7 +160,7 @@ export default async function CompanyProfilePage({
           {projects.completed.length > 0 && (
             <section className="detail__block">
               <h2 className="section__heading">{t.company.completedProjects}</h2>
-              <ProjectList projects={projects.completed} locale={locale} />
+              <ProjectGrid projects={projects.completed} stats={projectStats} locale={locale} />
             </section>
           )}
 
@@ -184,9 +169,14 @@ export default async function CompanyProfilePage({
             {units.length > 0 ? (
               <div className="grid">
                 {units.map((card) => (
-                  // Units have no detail route until the projects slice; render
-                  // them unlinked rather than shipping a link that 404s.
-                  <PropertyCard key={card.slug} card={card} locale={locale} href={null} />
+                  // Units now have a detail route under their project, so each
+                  // card links to it — /projekte/[project]/[unit].
+                  <PropertyCard
+                    key={card.slug}
+                    card={card}
+                    locale={locale}
+                    href={listingHref(card, locale)}
+                  />
                 ))}
               </div>
             ) : (

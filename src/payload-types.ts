@@ -566,6 +566,18 @@ export interface ProjectUnit {
    * Set automatically on first publish.
    */
   publishedAt?: string | null;
+  seo?: {
+    /**
+     * Leave empty to generate from the title.
+     */
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    /**
+     * Falls back to the first gallery image.
+     */
+    ogImage?: (number | null) | Media;
+    noindex?: boolean | null;
+  };
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -1001,6 +1013,14 @@ export interface ProjectUnitsSelect<T extends boolean = true> {
         id?: T;
       };
   publishedAt?: T;
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+        ogImage?: T;
+        noindex?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   _status?: T;

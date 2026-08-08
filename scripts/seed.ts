@@ -116,37 +116,75 @@ const seed = async () => {
     },
   })
 
+  // A second, completed project on the same developer. It gives the projects
+  // index more than one card, keeps the company page's completed-projects split
+  // exercised, and — being multi-building with a `building` value on every unit
+  // — proves the unit table's building column appears only when it carries
+  // information.
+  const completedProject = await payload.create({
+    collection: 'projects',
+    data: {
+      name: 'Laprakë Garden',
+      slug: 'laprake-garden',
+      tagline: 'Banesa të përfunduara pranë Rrugës Dritan Hoxha',
+      developer: company.id,
+      area: areaIds['Laprakë'],
+      location: [19.8005, 41.3403],
+      constructionPhase: 'completed',
+      completionDate: '2025-09-01',
+      _status: 'published',
+      // Published before Orbital, so "featured, then newest" puts the active
+      // development above the finished one on the index. Without distinct
+      // timestamps both projects land in the same second and the order is
+      // whatever the database feels like.
+      publishedAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+  })
+
+  // Every market state is represented on purpose: the project page must be
+  // proven to keep sold and reserved units visible (docs/03), and one
+  // price-on-request unit keeps the "no €/m², no empty cell" path honest.
   const unitPlan = [
-    { unitCode: 'A-4-1', floor: 4, rooms: '1+1', areaGross: 62, areaNet: 55, price: 96000, status: 'sold' },
-    { unitCode: 'A-7-2', floor: 7, rooms: '2+1', areaGross: 104, areaNet: 92, price: 168000, status: 'available' },
-    { unitCode: 'A-9-3', floor: 9, rooms: '2+1', areaGross: 111, areaNet: 98, price: 182000, status: 'reserved' },
-    { unitCode: 'B-6-1', floor: 6, rooms: '3+1', areaGross: 131.14, areaNet: 116.2, price: 258500, status: 'available' },
-    { unitCode: 'B-13-2', floor: 13, rooms: '3+1+2', areaGross: 152, areaNet: 134, price: 312000, status: 'available' },
+    { project: 'orbital', unitCode: 'A-4-1', building: undefined, floor: 4, rooms: '1+1', areaGross: 62, areaNet: 55, price: 96000, status: 'sold' },
+    { project: 'orbital', unitCode: 'A-7-2', building: undefined, floor: 7, rooms: '2+1', areaGross: 104, areaNet: 92, price: 168000, status: 'available' },
+    { project: 'orbital', unitCode: 'A-9-3', building: undefined, floor: 9, rooms: '2+1', areaGross: 111, areaNet: 98, price: 182000, status: 'reserved' },
+    { project: 'orbital', unitCode: 'B-6-1', building: undefined, floor: 6, rooms: '3+1', areaGross: 131.14, areaNet: 116.2, price: 258500, status: 'available' },
+    { project: 'orbital', unitCode: 'B-13-2', building: undefined, floor: 13, rooms: '3+1+2', areaGross: 152, areaNet: 134, price: 312000, status: 'available' },
+    { project: 'orbital', unitCode: 'B-0-1', building: undefined, floor: 0, rooms: '2+1', areaGross: 98, areaNet: 86, priceOnRequest: true, status: 'available' },
+    { project: 'garden', unitCode: 'G-1-2', building: 'A', floor: 1, rooms: '1+1', areaGross: 58, areaNet: 51, price: 82000, status: 'sold' },
+    { project: 'garden', unitCode: 'G-2-1', building: 'A', floor: 2, rooms: '2+1', areaGross: 92, areaNet: 81, price: 129000, status: 'sold' },
+    { project: 'garden', unitCode: 'G-3-4', building: 'B', floor: 3, rooms: '2+1', areaGross: 94, areaNet: 83, price: 134000, status: 'available' },
   ] as const
 
+  const projectsBySeedKey = { orbital: project, garden: completedProject } as const
+
   for (const u of unitPlan) {
+    const parent = projectsBySeedKey[u.project]
+    const priceOnRequest = 'priceOnRequest' in u && u.priceOnRequest === true
+
     await payload.create({
       collection: 'project-units',
       data: {
         unitCode: u.unitCode,
+        building: u.building,
         floor: u.floor,
         rooms: u.rooms,
         areaGross: u.areaGross,
         areaNet: u.areaNet,
         terraceSqm: u.unitCode === 'B-6-1' ? 34.1 : undefined,
-        price: u.price,
+        price: 'price' in u ? u.price : undefined,
+        priceOnRequest,
         status: u.status,
-        project: project.id,
+        project: parent.id,
         propertyType: 'apartment',
-        title: `${u.rooms} në ${project.name}`,
-        slug: `orbital-3-${u.unitCode.toLowerCase()}`,
+        title: `${u.rooms} në ${parent.name}`,
+        slug: `${parent.slug}-${u.unitCode.toLowerCase()}`,
         currency: 'EUR',
-        priceOnRequest: false,
         listingType: 'sale',
         bedrooms: Number(u.rooms.split('+')[0]),
         bathrooms: u.rooms.endsWith('+2') ? 2 : 1,
         orientation: ['SW'],
-        buildingPhase: 'facade',
+        buildingPhase: parent.constructionPhase === 'completed' ? 'finished' : 'facade',
         mortgageEligible: true,
         gallery: [],
         _status: 'published',
@@ -154,6 +192,32 @@ const seed = async () => {
       },
     })
   }
+
+  // One draft unit under a published project, so the unit route can be proven
+  // to 404 drafts for anonymous visitors the same way /prona/[slug] is.
+  await payload.create({
+    collection: 'project-units',
+    data: {
+      unitCode: 'A-11-9',
+      floor: 11,
+      rooms: '2+1',
+      areaGross: 100,
+      price: 175000,
+      priceOnRequest: false,
+      status: 'available',
+      project: project.id,
+      propertyType: 'apartment',
+      title: 'Njësi draft për test',
+      slug: 'orbital-3-residence-draft-unit',
+      currency: 'EUR',
+      listingType: 'sale',
+      bedrooms: 2,
+      bathrooms: 1,
+      mortgageEligible: false,
+      gallery: [],
+      _status: 'draft',
+    },
+  })
 
   // Shapes taken from the client's live inventory: mixed currencies, gross and
   // net areas, price-on-request, land with no rooms, shops, mortgage flags.

@@ -74,6 +74,22 @@ Properties additionally carry `street` and `landmark` as free text, because
 listings here are advertised by street ("Rruga Bardhyl") and by reference point
 ("Pranë Rotondës"), not by neighbourhood alone.
 
+Units additionally carry `unitCode` (`B-12-4`), `building` and `floorPlan`, and
+inherit `area`, `location` and `developer` from their project rather than
+duplicating them — see `docs/03-projects-units.md`.
+
+## What goes in the view
+
+`listing_index` carries the columns a listing surface needs to render a row and
+link to it. That is why `unit_code`, `building` and `project_slug` are in it
+(NULL on property rows): the project page's unit table is a listing surface, and
+it cannot label a row or build a `/projekte/[slug]/[unit]` href without them.
+
+Two things stay out. Localized text — the view answers "which listings match",
+then Payload fetches the matching rows in the current locale. And anything
+presentational a single batched read can resolve afterwards, such as cover
+photos, which `getCoverThumbnails` keys off the ids the view already returned.
+
 ## Three rules about price and area
 
 **Price is optional.** Real listings say "Çmimi me kërkesë". If `price` is

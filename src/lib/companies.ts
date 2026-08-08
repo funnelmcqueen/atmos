@@ -15,7 +15,7 @@
  */
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import type { Company, Project } from '@/payload-types'
+import type { Company } from '@/payload-types'
 import type { Locale } from '@/messages/sq'
 
 const idOf = (rel: number | { id: number } | null | undefined): number | null => {
@@ -140,55 +140,14 @@ export const getCompanyProfile = async (
 /* Projects                                                                   */
 /* -------------------------------------------------------------------------- */
 
-export interface CompanyProject {
-  name: string
-  slug: string
-  phase: Project['constructionPhase']
-  completionDate: string | null
-  areaName: string | null
-  unitTypes: NonNullable<Project['unitTypesSummary']>
-}
-
-export interface CompanyProjects {
-  active: CompanyProject[]
-  completed: CompanyProject[]
-}
-
 /**
- * A company's published projects, split into active (planning / under
- * construction) and completed. Queried by developer relation — never a stored
- * list on the company (docs/04).
+ * A company's projects live in `lib/projects.ts` as `getCompanyProjectCards`,
+ * still queried by the developer relation and never as a stored list on the
+ * company (docs/04). They moved there when the projects slice gave them a real
+ * route and a shared ProjectCard: one project-shaped read model, used by the
+ * projects index and this page alike, rather than a company-specific copy that
+ * drifts from it.
  */
-export const getCompanyProjects = async (companyId: number): Promise<CompanyProjects> => {
-  const payload = await getPayload({ config })
-  const { docs } = await payload.find({
-    collection: 'projects',
-    where: { developer: { equals: companyId } },
-    sort: '-publishedAt',
-    depth: 0,
-    limit: 200,
-    overrideAccess: false,
-  })
-
-  const active: CompanyProject[] = []
-  const completed: CompanyProject[] = []
-
-  for (const p of docs) {
-    const [areaName] = await areaNames(payload, p.area ? [p.area] : [])
-    const project: CompanyProject = {
-      name: p.name,
-      slug: p.slug,
-      phase: p.constructionPhase,
-      completionDate: p.completionDate ?? null,
-      areaName: areaName ?? null,
-      unitTypes: p.unitTypesSummary ?? [],
-    }
-    if (p.constructionPhase === 'completed') completed.push(project)
-    else active.push(project)
-  }
-
-  return { active, completed }
-}
 
 /* -------------------------------------------------------------------------- */
 /* Articles                                                                   */

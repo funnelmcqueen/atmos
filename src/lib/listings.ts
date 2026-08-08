@@ -3,9 +3,11 @@
  * the map and similar-properties (docs/06-search-map.md). Nothing user-facing
  * queries the `properties` or `project_units` tables directly.
  *
- * This slice serves standalone properties only (`source = 'property'`): unit
- * detail pages don't exist until the projects slice, so every card here links
- * to /prona/[slug]. Drop the source filter once units have a detail route.
+ * Search on /prona serves standalone properties only (`source = 'property'`).
+ * That is a product decision, not a leftover: dropping 200 units of one project
+ * into the general result set dilutes it. Units surface on their project page,
+ * on their developer's company page, and at their own detail route. Revisit
+ * once there is real project inventory to judge it against.
  *
  * The view has no `title` column — title is localized and lives in
  * `properties_locales`. Cards compose a heading from structured columns
@@ -13,7 +15,12 @@
  */
 import { getPayload } from 'payload'
 import config from '@/payload.config'
-import type { FilterValues, SortKey } from '@/lib/search-params'
+import type {
+  FilterValues,
+  SortKey,
+  UnitFilterValues,
+  UnitSortKey,
+} from '@/lib/search-params'
 
 /** One card's worth of a listing, camelCased from the view's snake_case. */
 export interface ListingCard {
@@ -37,12 +44,19 @@ export interface ListingCard {
   street: string | null
   mortgageEligible: boolean
   verified: boolean
+  // Unit-only. Null on every standalone property (docs/01 — what goes in the
+  // view). `projectSlug` + `slug` are what build a unit's detail href.
+  projectSlug: string | null
+  projectName: string | null
+  unitCode: string | null
+  building: string | null
 }
 
 type Row = Record<string, unknown>
 
 const num = (v: unknown): number | null => (v === null || v === undefined ? null : Number(v))
 const numReq = (v: unknown): number => Number(v)
+const str = (v: unknown): string | null => (v === null || v === undefined ? null : String(v))
 
 const toCard = (r: Row): ListingCard => ({
   source: r.source as ListingCard['source'],
@@ -56,16 +70,32 @@ const toCard = (r: Row): ListingCard => ({
   priceOnRequest: Boolean(r.price_on_request),
   priceEur: num(r.price_eur),
   pricePerSqm: num(r.price_per_sqm),
-  rentPeriod: r.rent_period === null || r.rent_period === undefined ? null : String(r.rent_period),
+  rentPeriod: str(r.rent_period),
   areaGross: numReq(r.area_gross),
-  rooms: r.rooms === null || r.rooms === undefined ? null : String(r.rooms),
+  rooms: str(r.rooms),
   bedrooms: num(r.bedrooms),
   floor: num(r.floor),
-  areaName: r.area_name === null || r.area_name === undefined ? null : String(r.area_name),
-  street: r.street === null || r.street === undefined ? null : String(r.street),
+  areaName: str(r.area_name),
+  street: str(r.street),
   mortgageEligible: Boolean(r.mortgage_eligible),
   verified: Boolean(r.verified),
+  projectSlug: str(r.project_slug),
+  projectName: str(r.project_name),
+  unitCode: str(r.unit_code),
+  building: str(r.building),
 })
+
+/**
+ * Where a listing card links. Units live under their project
+ * (/projekte/[project]/[unit]); slugs are unique per collection, not globally,
+ * so a unit and a property can share one — the nesting is what keeps them
+ * apart. A unit row missing its project slug (impossible via the view's inner
+ * join, but the type allows it) falls back to unlinked rather than to a 404.
+ */
+export const listingHref = (card: ListingCard, locale: string): string | null => {
+  if (card.source === 'property') return `/${locale}/prona/${card.slug}`
+  return card.projectSlug ? `/${locale}/projekte/${card.projectSlug}/${card.slug}` : null
+}
 
 // Columns every card needs. Deliberately omits `location` (PostGIS point —
 // comes back as WKB and no card uses it). The map query below re-adds it as
@@ -73,7 +103,8 @@ const toCard = (r: Row): ListingCard => ({
 const CARD_COLUMNS = `
   source, source_id, slug, property_type, listing_type, status,
   price, currency, price_on_request, price_eur, price_per_sqm, rent_period,
-  area_gross, rooms, bedrooms, floor, area_name, street, mortgage_eligible, verified
+  area_gross, rooms, bedrooms, floor, area_name, street, mortgage_eligible, verified,
+  project_slug, project_name, unit_code, building
 `
 
 type Pool = { query: (text: string, params?: unknown[]) => Promise<{ rows: Row[] }> }
@@ -341,6 +372,121 @@ export const getCompanyUnits = async (companyId: number): Promise<ListingCard[]>
     [companyId],
   )
   return rows.map(toCard)
+}
+
+/* -------------------------------------------------------------------------- */
+/* Project units                                                              */
+/* -------------------------------------------------------------------------- */
+
+/** ORDER BY per unit-table sort key. Floor is the default reading order of a
+ *  building; NULL floors and NULL prices sort last either way, and every sort
+ *  tiebreaks on unit_code so equal floors keep a stable, human order. */
+const UNIT_ORDER_BY: Record<UnitSortKey, string> = {
+  'floor-asc': 'floor ASC NULLS LAST, unit_code ASC',
+  'floor-desc': 'floor DESC NULLS LAST, unit_code ASC',
+  'price-asc': 'price_eur ASC NULLS LAST, unit_code ASC',
+  'price-desc': 'price_eur DESC NULLS LAST, unit_code ASC',
+}
+
+/**
+ * Every published unit of one project, for the unit table (docs/03).
+ *
+ * Sold and reserved units are in the result set unless the visitor explicitly
+ * filters them out. That is the point of the table: visible scarcity is what
+ * makes the page persuasive, and the client asked for it (docs/03, docs/12). Do
+ * not add a default `status = 'available'` clause here.
+ */
+export const getProjectUnits = async (
+  projectId: number,
+  filters: UnitFilterValues,
+): Promise<ListingCard[]> => {
+  const pool = await getPool()
+
+  const clauses = [`source = 'unit'`, 'project_id = $1']
+  const params: unknown[] = [projectId]
+  const add = (sql: string, value: unknown) => {
+    params.push(value)
+    clauses.push(sql.replace('$?', `$${params.length}`))
+  }
+
+  if (filters.status) add('status = $?', filters.status)
+  if (filters.rooms) add('rooms = $?', filters.rooms)
+
+  const { rows } = await pool.query(
+    `SELECT ${CARD_COLUMNS}
+       FROM listing_index
+      WHERE ${clauses.join(' AND ')}
+      ORDER BY ${UNIT_ORDER_BY[filters.sort]}`,
+    params,
+  )
+  return rows.map(toCard)
+}
+
+/**
+ * How many of a project's published units are still available, and the cheapest
+ * asking price among them — the two numbers a project card leads with. Computed
+ * from the view rather than from `unitTypesSummary` so the card never contradicts
+ * the table below it.
+ */
+export interface ProjectUnitStats {
+  total: number
+  available: number
+  priceFromEur: number | null
+}
+
+export const getProjectUnitStats = async (
+  projectIds: number[],
+): Promise<Map<number, ProjectUnitStats>> => {
+  const stats = new Map<number, ProjectUnitStats>()
+  if (projectIds.length === 0) return stats
+
+  const pool = await getPool()
+  const { rows } = await pool.query(
+    `SELECT project_id,
+            COUNT(*)::int                                        AS total,
+            COUNT(*) FILTER (WHERE status = 'available')::int    AS available,
+            MIN(price_eur) FILTER (WHERE status = 'available')   AS price_from
+       FROM listing_index
+      WHERE source = 'unit' AND project_id = ANY($1)
+      GROUP BY project_id`,
+    [projectIds],
+  )
+
+  for (const r of rows) {
+    stats.set(numReq(r.project_id), {
+      total: numReq(r.total),
+      available: numReq(r.available),
+      priceFromEur: num(r.price_from),
+    })
+  }
+  return stats
+}
+
+/** Distinct room strings among a project's published units — the only values
+ *  the unit table's rooms filter offers, so it never lists an empty option. */
+export const getProjectRooms = async (projectId: number): Promise<string[]> => {
+  const pool = await getPool()
+  const { rows } = await pool.query(
+    `SELECT DISTINCT rooms
+       FROM listing_index
+      WHERE source = 'unit' AND project_id = $1 AND rooms IS NOT NULL
+      ORDER BY rooms`,
+    [projectId],
+  )
+  return rows.map((r) => String(r.rooms))
+}
+
+/** Published unit slugs paired with their project slug — feeds the unit route's
+ *  generateStaticParams. */
+export const getUnitRoutes = async (): Promise<{ project: string; unit: string }[]> => {
+  const pool = await getPool()
+  const { rows } = await pool.query(
+    `SELECT project_slug, slug
+       FROM listing_index
+      WHERE source = 'unit' AND project_slug IS NOT NULL
+      ORDER BY project_slug, slug`,
+  )
+  return rows.map((r) => ({ project: String(r.project_slug), unit: String(r.slug) }))
 }
 
 /** Distinct published property slugs — feeds generateStaticParams. */

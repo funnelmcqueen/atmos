@@ -71,7 +71,8 @@ export const Projects: CollectionConfig = {
     { name: 'brochure', type: 'upload', relationTo: 'media' },
 
     // Denormalized so the project card doesn't aggregate units on render.
-    // Recomputed by a hook on project-units afterChange — see docs/03.
+    // Recomputed from published units by the afterChange/afterDelete hooks in
+    // collections/hooks/recalcUnitTypes.ts — see docs/03.
     {
       name: 'unitTypesSummary',
       type: 'array',

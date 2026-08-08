@@ -16,10 +16,11 @@ import { Badge } from './Badge'
  * from structured columns: "Apartament 2+1 në Astir", or "Truall / Tokë në
  * Golem" for land, which has no rooms.
  *
- * `href` overrides the link target; default is /[locale]/prona/[slug]. Pass
- * `null` to render the card unlinked — the company page does this for project
- * units, which have no detail route until the projects slice adds one (then it
- * passes a real unit href here instead of null).
+ * `href` overrides the link target; default is /[locale]/prona/[slug], which is
+ * right for a standalone property. A unit's page lives under its project, so
+ * callers rendering units pass `listingHref(card, locale)`. Passing `null`
+ * renders the card unlinked — still supported for surfaces that have no
+ * destination, though nothing needs it now that units have a route.
  *
  * `thumbnail` is the listing's cover photo (the first gallery image). When
  * absent the media area falls back to a token-styled placeholder, so cards work

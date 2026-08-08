@@ -19,6 +19,13 @@
 -- collection its own enum type (enum_properties_property_type vs
 -- enum_project_units_property_type, etc.), and Postgres will not UNION two
 -- distinct enum types. Casting to text yields one plain-string read model.
+--
+-- Three columns are unit-only and NULL on the property side: unit_code,
+-- building and project_slug. They are here rather than resolved per-render
+-- because the project page's unit table is a listing surface like any other —
+-- it reads this view (rule 4), and a unit table with no unit code, and no way
+-- to build /projekte/[project]/[unit] hrefs, is not a unit table. Properties
+-- have no analogue for any of the three, so they union as typed NULLs.
 
 DROP VIEW IF EXISTS listing_index;
 
@@ -56,6 +63,9 @@ SELECT
   p.location                                        AS location,
   NULL::int                                         AS project_id,
   NULL::text                                        AS project_name,
+  NULL::text                                        AS project_slug,
+  NULL::text                                        AS unit_code,
+  NULL::text                                        AS building,
   NULL::int                                         AS company_id,
   p.featured                                        AS featured,
   p.verified                                        AS verified,
@@ -99,6 +109,9 @@ SELECT
   pr.location                                       AS location,
   pr.id                                             AS project_id,
   pr.name                                           AS project_name,
+  pr.slug                                           AS project_slug,
+  u.unit_code                                       AS unit_code,
+  u.building                                        AS building,
   pr.developer_id                                   AS company_id,
   FALSE                                             AS featured,
   TRUE                                              AS verified,
@@ -126,5 +139,10 @@ CREATE INDEX IF NOT EXISTS properties_location_idx
   ON properties USING GIST (location);
 CREATE INDEX IF NOT EXISTS project_units_search_idx
   ON project_units (_status, status, price_eur, area_gross);
+-- The project page reads every published unit of one project and sorts by
+-- floor or price — a project-scoped lookup the search index above does not lead
+-- with.
+CREATE INDEX IF NOT EXISTS project_units_project_idx
+  ON project_units (project_id, _status, floor, price_eur);
 CREATE INDEX IF NOT EXISTS projects_location_idx
   ON projects USING GIST (location);

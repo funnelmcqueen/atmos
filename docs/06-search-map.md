@@ -10,12 +10,20 @@ id, source ('property' | 'unit'), source_id, slug, property_type, listing_type,
 status, price, currency, price_on_request, price_eur, rent_period,
 area_gross, area_net, terrace_sqm, price_per_sqm, rooms, bedrooms, bathrooms,
 floor, building_phase, mortgage_eligible, area_id, area_name, street, location,
-project_id, project_name, company_id, featured, verified, published_at,
-updated_at
+project_id, project_name, project_slug, unit_code, building, company_id,
+featured, verified, published_at, updated_at
 ```
 
 `price_per_sqm` is computed in the view from `price_eur / area_gross`, and is
 NULL when `price_on_request` is true. Sort those rows last, never first.
+
+`project_slug`, `unit_code` and `building` are unit-only — NULL on every
+property row. They are in the view because the project page's unit table is a
+listing surface and reads it like every other one: it needs the unit code to
+label a row and the project slug to build the `/projekte/[slug]/[unit]` href.
+
+A column belongs in the view when a listing surface needs it to render a row.
+Localized text never does — see below.
 
 **Sort and filter on `price_eur`, display `price` + `currency`.** The client
 quotes some listings in Lek and some in Euro. A range filter on the raw `price`
