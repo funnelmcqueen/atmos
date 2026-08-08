@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import type { ListingCard } from '@/lib/listings'
+import Image from 'next/image'
+import type { ListingCard, CardThumb } from '@/lib/listings'
 import type { Locale } from '@/messages/sq'
 import { PROPERTY_TYPE_LABELS, t } from '@/messages/sq'
 import { formatPrice, formatArea, formatPerSqm } from '@/lib/format'
@@ -19,15 +20,21 @@ import { Badge } from './Badge'
  * `null` to render the card unlinked — the company page does this for project
  * units, which have no detail route until the projects slice adds one (then it
  * passes a real unit href here instead of null).
+ *
+ * `thumbnail` is the listing's cover photo (the first gallery image). When
+ * absent the media area falls back to a token-styled placeholder, so cards work
+ * whether or not a listing has photos.
  */
 export function PropertyCard({
   card,
   locale,
   href,
+  thumbnail,
 }: {
   card: ListingCard
   locale: Locale
   href?: string | null
+  thumbnail?: CardThumb | null
 }) {
   const typeLabel = PROPERTY_TYPE_LABELS[card.propertyType] ?? card.propertyType
   const heading = [typeLabel, card.rooms, card.areaName ? `në ${card.areaName}` : null]
@@ -53,6 +60,15 @@ export function PropertyCard({
   const inner = (
     <>
       <div className="card__media" aria-hidden="true">
+        {thumbnail && (
+          <Image
+            src={thumbnail.url}
+            alt=""
+            fill
+            sizes="(max-width: 700px) 100vw, 300px"
+            className="card__img"
+          />
+        )}
         <span className="card__type">{typeLabel}</span>
       </div>
       <div className="card__body">

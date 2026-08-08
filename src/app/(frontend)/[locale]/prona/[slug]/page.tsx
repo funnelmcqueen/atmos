@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 import { getPropertyDetail } from '@/lib/property-detail'
-import { getSimilarProperties, getPropertySlugs } from '@/lib/listings'
+import { getSimilarProperties, getPropertySlugs, getCoverThumbnails } from '@/lib/listings'
 import { isLocale, t, DEFAULT_LOCALE, BUILDING_PHASE_LABELS, type Locale } from '@/messages/sq'
 import { formatPrice, formatArea, pricePerSqm, formatDate } from '@/lib/format'
 import { buildAlternates, breadcrumbLd, realEstateListingLd, localeUrl } from '@/lib/seo'
@@ -106,6 +106,7 @@ export default async function PropertyDetailPage({
     priceEur: property.priceEur ?? null,
     excludeSlug: slug,
   })
+  const similarThumbs = await getCoverThumbnails(similar)
 
   const place = [property.street, areaName].filter(Boolean).join(', ')
   const url = localeUrl(locale, `/prona/${slug}`)
@@ -224,7 +225,12 @@ export default async function PropertyDetailPage({
           <h2 className="section__heading">{t.detail.similar}</h2>
           <div className="grid">
             {similar.map((card) => (
-              <PropertyCard key={card.slug} card={card} locale={locale} />
+              <PropertyCard
+                key={card.slug}
+                card={card}
+                locale={locale}
+                thumbnail={similarThumbs.get(card.slug) ?? null}
+              />
             ))}
           </div>
         </section>
