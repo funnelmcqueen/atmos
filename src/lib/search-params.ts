@@ -179,3 +179,62 @@ export const toSearchParams = (
 
   return sp
 }
+
+/* --- Map view state ------------------------------------------------------- */
+
+/**
+ * The map's centre and zoom also live in the URL (docs/06), so a panned map is
+ * shareable and restores on reload. These are view state, not filters: they are
+ * deliberately NOT part of `FilterValues` and NOT counted by `hasActiveFilters`,
+ * so panning the map never flips the page to `noindex`. The map writes them
+ * client-side with `history.replaceState`, so a pan never re-runs the server
+ * list or resets pagination — only filters do that.
+ */
+export interface MapState {
+  center: [number, number] | null // [lng, lat]
+  zoom: number | null
+}
+
+const MAP_PARAM_NAMES: Record<Locale, { center: string; zoom: string }> = {
+  sq: { center: 'qendra', zoom: 'zoom' },
+  en: { center: 'center', zoom: 'zoom' },
+}
+
+/** The localized query-param name for a map view-state field. */
+export const mapParamName = (locale: Locale, field: 'center' | 'zoom'): string =>
+  MAP_PARAM_NAMES[locale][field]
+
+const toFiniteNumber = (raw: string | undefined): number | null => {
+  if (raw === undefined) return null
+  const n = Number(raw)
+  return Number.isFinite(n) ? n : null
+}
+
+/** Read the map's centre (`lng,lat`) and zoom from the URL, or nulls if absent
+ *  or malformed — the map then falls back to its default view. */
+export const parseMapState = (locale: Locale, raw: RawParams): MapState => {
+  const centerRaw = first(raw[mapParamName(locale, 'center')])
+  const [lngRaw, latRaw] = (centerRaw ?? '').split(',')
+  const lng = toFiniteNumber(lngRaw)
+  const lat = toFiniteNumber(latRaw)
+  const zoom = toFiniteNumber(first(raw[mapParamName(locale, 'zoom')]))
+
+  return {
+    center: lng !== null && lat !== null ? [lng, lat] : null,
+    zoom,
+  }
+}
+
+/**
+ * Write map view state into an existing `URLSearchParams`, mutating it in place
+ * and leaving every other param (the active filters) untouched. The map calls
+ * this before `replaceState` so the two map params are the only thing a pan
+ * changes in the URL.
+ */
+export const setMapState = (locale: Locale, params: URLSearchParams, state: MapState): void => {
+  if (state.center) {
+    const [lng, lat] = state.center
+    params.set(mapParamName(locale, 'center'), `${lng.toFixed(5)},${lat.toFixed(5)}`)
+  }
+  if (state.zoom !== null) params.set(mapParamName(locale, 'zoom'), state.zoom.toFixed(2))
+}

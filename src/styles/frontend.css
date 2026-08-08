@@ -743,3 +743,87 @@
   padding: var(--space-6) 0;
   color: var(--muted);
 }
+
+/* --- Map ------------------------------------------------------------------ */
+.property-map {
+  position: relative;
+  margin-bottom: var(--space-5);
+}
+.property-map__canvas,
+.property-map--loading,
+.property-map--error {
+  height: 460px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+@media (max-width: 700px) {
+  .property-map__canvas,
+  .property-map--loading,
+  .property-map--error {
+    height: 340px;
+  }
+}
+.property-map--error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  color: var(--muted);
+  text-align: center;
+}
+
+/* "Use my location" — a button on the map, never fired on load. */
+.map-locate {
+  position: absolute;
+  left: var(--space-2);
+  bottom: var(--space-2);
+  z-index: 2;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  font-size: var(--step--1);
+}
+.map-locate[disabled] {
+  opacity: 0.6;
+  cursor: default;
+}
+.map-locate__error {
+  position: absolute;
+  left: var(--space-2);
+  bottom: calc(var(--space-2) + 2.75rem);
+  z-index: 2;
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--status-sold);
+  font-size: var(--step--1);
+  box-shadow: var(--shadow);
+}
+
+/* Popup: let the reused PropertyCard supply the surface; the MapLibre chrome
+   only contributes the tip and close button, recoloured to tokens. Selectors
+   are scoped under .map-popup so they beat the library defaults regardless of
+   stylesheet order. */
+.map-popup__card {
+  width: 250px;
+}
+.map-popup .maplibregl-popup-content {
+  padding: 0;
+  background: transparent;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.map-popup .maplibregl-popup-tip {
+  border-top-color: var(--surface);
+  border-bottom-color: var(--surface);
+}
+.map-popup .maplibregl-popup-close-button {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--text);
+  font-size: var(--step-1);
+}

@@ -4,12 +4,14 @@ import { searchListings, getListingFacets, getCoverThumbnails } from '@/lib/list
 import { isLocale, t, DEFAULT_LOCALE, type Locale } from '@/messages/sq'
 import {
   parseSearchParams,
+  parseMapState,
   toSearchParams,
   hasActiveFilters,
   type FilterValues,
 } from '@/lib/search-params'
 import { buildAlternates, breadcrumbLd, localeUrl } from '@/lib/seo'
 import { PropertyCard } from '@/components/PropertyCard'
+import { PropertyMap } from '@/components/PropertyMap'
 import { FilterPanel } from '@/components/FilterPanel'
 import { Pagination } from '@/components/Pagination'
 import { JsonLd } from '@/components/JsonLd'
@@ -49,7 +51,9 @@ export default async function PropertiesPage({
   const { locale } = await params
   if (!isLocale(locale)) notFound()
 
-  const filters: FilterValues = parseSearchParams(locale, await searchParams)
+  const rawParams = await searchParams
+  const filters: FilterValues = parseSearchParams(locale, rawParams)
+  const mapState = parseMapState(locale, rawParams)
   const facets = await getListingFacets()
 
   // `zona` is a slug in the URL; resolve it to an area id against the facets.
@@ -84,6 +88,17 @@ export default async function PropertiesPage({
       </div>
 
       <FilterPanel locale={locale} values={filters} facets={facets} />
+
+      {/* The map reads the same filter query as the list, so both show the same
+          set. It fetches its markers by bbox client-side; centre/zoom live in the
+          URL. Rendered via a dynamic(ssr:false) mount, so MapLibre stays out of
+          the main bundle (docs/06-search-map.md). */}
+      <PropertyMap
+        locale={locale}
+        filterQuery={filterQuery}
+        initialCenter={mapState.center}
+        initialZoom={mapState.zoom}
+      />
 
       {cards.length === 0 ? (
         <p className="empty">{t.list.empty}</p>

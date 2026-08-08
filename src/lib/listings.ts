@@ -68,7 +68,8 @@ const toCard = (r: Row): ListingCard => ({
 })
 
 // Columns every card needs. Deliberately omits `location` (PostGIS point —
-// comes back as WKB and no card uses it).
+// comes back as WKB and no card uses it). The map query below re-adds it as
+// two scalar lng/lat columns via ST_X/ST_Y.
 const CARD_COLUMNS = `
   source, source_id, slug, property_type, listing_type, status,
   price, currency, price_on_request, price_eur, price_per_sqm, rent_period,
@@ -201,22 +202,22 @@ const ORDER_BY: Record<SortKey, string> = {
 }
 
 /**
- * One page of standalone properties matching `filters`, sorted per `filters.sort`.
+ * Build the shared WHERE for a `listing_index` query from validated
+ * `FilterValues`. Every clause is parameterized — no user string reaches the
+ * SQL. `area` is a slug in the URL; the caller resolves it to `areaId` against
+ * the facets (an unresolved slug yields no rows, the right answer for a bad
+ * area). Price filters run on `price_eur`, size on `area_gross` — the same
+ * columns the view sorts on, so mixed-currency ranges behave (docs/06).
  *
- * The WHERE is built from validated `FilterValues`, so every clause is
- * parameterized — no user string reaches the SQL. `area` is a slug in the URL;
- * the caller resolves it to `areaId` against the facets (an unresolved slug
- * yields no rows, which is the right answer for a bad area). Price filters run
- * on `price_eur`, size on `area_gross` — the same columns the view sorts on, so
- * mixed-currency ranges behave (docs/06).
+ * The list and the map share this builder so the map obeys exactly the same
+ * active filters as the grid (docs/06). Each returns `clauses` and `params`;
+ * the caller appends its own tail (LIMIT/OFFSET, or the bbox envelope) starting
+ * at `params.length + 1`.
  */
-export const searchListings = async (
+const filterClauses = (
   filters: FilterValues,
   areaId: number | null,
-  perPage: number,
-): Promise<PropertyPage> => {
-  const pool = await getPool()
-
+): { clauses: string[]; params: unknown[] } => {
   const clauses: string[] = [`source = 'property'`]
   const params: unknown[] = []
   const add = (sql: string, value: unknown) => {
@@ -235,6 +236,20 @@ export const searchListings = async (
   if (filters.mortgage) clauses.push('mortgage_eligible = TRUE')
   if (filters.status) add('status = $?', filters.status)
 
+  return { clauses, params }
+}
+
+/**
+ * One page of standalone properties matching `filters`, sorted per `filters.sort`.
+ */
+export const searchListings = async (
+  filters: FilterValues,
+  areaId: number | null,
+  perPage: number,
+): Promise<PropertyPage> => {
+  const pool = await getPool()
+
+  const { clauses, params } = filterClauses(filters, areaId)
   const where = clauses.join(' AND ')
   const offset = (filters.page - 1) * perPage
 
@@ -251,6 +266,60 @@ export const searchListings = async (
   ])
 
   return { cards: rows.rows.map(toCard), total: Number(count.rows[0]?.total ?? 0) }
+}
+
+/** A listing placed on the map: the card data plus its point coordinates. */
+export interface MapListing {
+  card: ListingCard
+  lng: number
+  lat: number
+}
+
+/** [minLng, minLat, maxLng, maxLat] — the map viewport, west/south/east/north. */
+export type Bbox = [number, number, number, number]
+
+/**
+ * Standalone properties whose point falls inside `bbox`, under the same active
+ * `filters` as the list (docs/06 — filters drive the map, not just the grid).
+ *
+ * PostGIS does the spatial work: `location && ST_MakeEnvelope(...)` intersects
+ * the point against the viewport rectangle using the GIST index — never fetch
+ * every listing and filter client-side. The envelope carries no SRID argument
+ * because Payload stores the `point` field as `geometry(Point)` with SRID 0
+ * (see the initial migration); a 4326 envelope would raise a mixed-SRID error.
+ *
+ * Unclustered rendering stays cheap by capping the result; a viewport with more
+ * points than `cap` still clusters correctly because clustering is by count in
+ * a cell, and the cap only trims the long tail a user cannot distinguish at that
+ * zoom. `location IS NOT NULL` guards the (currently required) point defensively.
+ */
+export const searchListingsInBounds = async (
+  filters: FilterValues,
+  areaId: number | null,
+  bbox: Bbox,
+  cap = 500,
+): Promise<MapListing[]> => {
+  const pool = await getPool()
+
+  const { clauses, params } = filterClauses(filters, areaId)
+  clauses.push('location IS NOT NULL')
+
+  const i = params.length // params so far; envelope takes the next four
+  params.push(bbox[0], bbox[1], bbox[2], bbox[3])
+  clauses.push(`location && ST_MakeEnvelope($${i + 1}, $${i + 2}, $${i + 3}, $${i + 4})`)
+
+  const where = clauses.join(' AND ')
+
+  const { rows } = await pool.query(
+    `SELECT ${CARD_COLUMNS}, ST_X(location) AS lng, ST_Y(location) AS lat
+       FROM listing_index
+      WHERE ${where}
+      ORDER BY featured DESC, published_at DESC NULLS LAST, source_id DESC
+      LIMIT $${params.length + 1}`,
+    [...params, cap],
+  )
+
+  return rows.map((r) => ({ card: toCard(r), lng: Number(r.lng), lat: Number(r.lat) }))
 }
 
 /**

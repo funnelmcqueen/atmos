@@ -144,6 +144,13 @@ export const t = {
     priceOnRequest: 'Çmimi me kërkesë',
     perSqm: '/m²',
   },
+  map: {
+    regionLabel: 'Harta e pronave',
+    useMyLocation: 'Përdor vendndodhjen time',
+    locating: 'Duke gjetur vendndodhjen…',
+    locationError: 'Nuk u mor dot vendndodhja.',
+    missingKey: 'Harta nuk mund të shfaqet: mungon çelësi i hartës.',
+  },
   badge: {
     verified: 'Pronë e verifikuar',
     mortgage: 'Me hipotekë',

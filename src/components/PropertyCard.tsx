@@ -24,17 +24,23 @@ import { Badge } from './Badge'
  * `thumbnail` is the listing's cover photo (the first gallery image). When
  * absent the media area falls back to a token-styled placeholder, so cards work
  * whether or not a listing has photos.
+ *
+ * `variant="compact"` is the same card with the status/verified/mortgage badge
+ * row dropped — the map popup wants photo, price, rooms and area only, without
+ * forking a second card component.
  */
 export function PropertyCard({
   card,
   locale,
   href,
   thumbnail,
+  variant = 'default',
 }: {
   card: ListingCard
   locale: Locale
   href?: string | null
   thumbnail?: CardThumb | null
+  variant?: 'default' | 'compact'
 }) {
   const typeLabel = PROPERTY_TYPE_LABELS[card.propertyType] ?? card.propertyType
   const heading = [typeLabel, card.rooms, card.areaName ? `në ${card.areaName}` : null]
@@ -72,11 +78,13 @@ export function PropertyCard({
         <span className="card__type">{typeLabel}</span>
       </div>
       <div className="card__body">
-        <div className="card__badges">
-          <StatusBadge status={card.status} />
-          {card.verified && <Badge>{t.badge.verified}</Badge>}
-          {card.mortgageEligible && <Badge tone="accent">{t.badge.mortgage}</Badge>}
-        </div>
+        {variant !== 'compact' && (
+          <div className="card__badges">
+            <StatusBadge status={card.status} />
+            {card.verified && <Badge>{t.badge.verified}</Badge>}
+            {card.mortgageEligible && <Badge tone="accent">{t.badge.mortgage}</Badge>}
+          </div>
+        )}
 
         <h3 className="card__title">{heading}</h3>
         {location && <p className="card__location">{location}</p>}
