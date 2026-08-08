@@ -7,9 +7,18 @@
 -- Rule: nothing user-facing queries `properties` or `project_units` directly.
 -- See docs/01-data-model.md and docs/06-search-map.md.
 --
+-- price_per_sqm is a SALE metric only. Rent listings return NULL for it: a
+-- monthly rent of 11 EUR/m2 and a sale of 1971 EUR/m2 in the same column would
+-- corrupt every price-per-m2 sort and range filter.
+--
 -- Apply through a Payload custom migration so it is versioned with the schema.
 -- Table and column names below are the ones Payload generates; verify them
 -- against the first `payload migrate:create` output before running this.
+--
+-- Enum columns are cast to text on both sides of the UNION. Payload gives each
+-- collection its own enum type (enum_properties_property_type vs
+-- enum_project_units_property_type, etc.), and Postgres will not UNION two
+-- distinct enum types. Casting to text yields one plain-string read model.
 
 DROP VIEW IF EXISTS listing_index;
 
@@ -21,23 +30,25 @@ SELECT
   'property'::text                                  AS source,
   p.id                                              AS source_id,
   p.slug                                            AS slug,
-  p.property_type                                   AS property_type,
-  p.listing_type                                    AS listing_type,
-  p.status                                          AS status,
+  p.property_type::text                             AS property_type,
+  p.listing_type::text                              AS listing_type,
+  p.status::text                                    AS status,
   p.price                                           AS price,
-  p.currency                                        AS currency,
+  p.currency::text                                  AS currency,
   p.price_on_request                                AS price_on_request,
   p.price_eur                                       AS price_eur,
-  p.rent_period                                     AS rent_period,
+  p.rent_period::text                               AS rent_period,
   p.area_gross                                      AS area_gross,
   p.area_net                                        AS area_net,
   p.terrace_sqm                                     AS terrace_sqm,
-  ROUND(p.price_eur / NULLIF(p.area_gross, 0))      AS price_per_sqm,
+  CASE WHEN p.listing_type = 'sale'
+       THEN ROUND(p.price_eur / NULLIF(p.area_gross, 0))
+       ELSE NULL END                                AS price_per_sqm,
   p.rooms                                           AS rooms,
   p.bedrooms                                        AS bedrooms,
   p.bathrooms                                       AS bathrooms,
   p.floor                                           AS floor,
-  p.building_phase                                  AS building_phase,
+  p.building_phase::text                            AS building_phase,
   p.mortgage_eligible                               AS mortgage_eligible,
   p.area_id                                         AS area_id,
   a.name                                            AS area_name,
@@ -62,23 +73,25 @@ SELECT
   'unit'::text                                      AS source,
   u.id                                              AS source_id,
   u.slug                                            AS slug,
-  u.property_type                                   AS property_type,
-  u.listing_type                                    AS listing_type,
-  u.status                                          AS status,
+  u.property_type::text                             AS property_type,
+  u.listing_type::text                              AS listing_type,
+  u.status::text                                    AS status,
   u.price                                           AS price,
-  u.currency                                        AS currency,
+  u.currency::text                                  AS currency,
   u.price_on_request                                AS price_on_request,
   u.price_eur                                       AS price_eur,
-  u.rent_period                                     AS rent_period,
+  u.rent_period::text                               AS rent_period,
   u.area_gross                                      AS area_gross,
   u.area_net                                        AS area_net,
   u.terrace_sqm                                     AS terrace_sqm,
-  ROUND(u.price_eur / NULLIF(u.area_gross, 0))      AS price_per_sqm,
+  CASE WHEN u.listing_type = 'sale'
+       THEN ROUND(u.price_eur / NULLIF(u.area_gross, 0))
+       ELSE NULL END                                AS price_per_sqm,
   u.rooms                                           AS rooms,
   u.bedrooms                                        AS bedrooms,
   u.bathrooms                                       AS bathrooms,
   u.floor                                           AS floor,
-  u.building_phase                                  AS building_phase,
+  u.building_phase::text                            AS building_phase,
   u.mortgage_eligible                               AS mortgage_eligible,
   pr.area_id                                        AS area_id,
   a.name                                            AS area_name,

@@ -219,6 +219,12 @@ export const listingFields: Field[] = [
       },
       {
         name: 'status',
+        // `dbName` gives this select its own enum type. Without it, Payload
+        // derives `enum_<table>_status`, which collides with the drafts
+        // `_status` field's enum of the same name — the market values
+        // (available/reserved/sold) get silently overwritten by draft/published.
+        // The column stays `status`; only the Postgres enum type is renamed.
+        dbName: 'listing_status',
         type: 'select',
         required: true,
         defaultValue: 'available',

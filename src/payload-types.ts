@@ -67,6 +67,14 @@ export interface Config {
   };
   blocks: {};
   collections: {
+    properties: Property;
+    'project-units': ProjectUnit;
+    projects: Project;
+    companies: Company;
+    areas: Area;
+    articles: Article;
+    'listing-requests': ListingRequest;
+    enquiries: Enquiry;
     users: User;
     media: Media;
     'payload-kv': PayloadKv;
@@ -76,6 +84,14 @@ export interface Config {
   };
   collectionsJoins: {};
   collectionsSelect: {
+    properties: PropertiesSelect<false> | PropertiesSelect<true>;
+    'project-units': ProjectUnitsSelect<false> | ProjectUnitsSelect<true>;
+    projects: ProjectsSelect<false> | ProjectsSelect<true>;
+    companies: CompaniesSelect<false> | CompaniesSelect<true>;
+    areas: AreasSelect<false> | AreasSelect<true>;
+    articles: ArticlesSelect<false> | ArticlesSelect<true>;
+    'listing-requests': ListingRequestsSelect<false> | ListingRequestsSelect<true>;
+    enquiries: EnquiriesSelect<false> | EnquiriesSelect<true>;
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -84,12 +100,12 @@ export interface Config {
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
   };
   db: {
-    defaultIDType: string;
+    defaultIDType: number;
   };
-  fallbackLocale: null;
+  fallbackLocale: ('false' | 'none' | 'null') | false | null | ('sq' | 'en' | 'it') | ('sq' | 'en' | 'it')[];
   globals: {};
   globalsSelect: {};
-  locale: null;
+  locale: 'sq' | 'en' | 'it';
   widgets: {
     collections: CollectionsWidget;
   };
@@ -119,10 +135,275 @@ export interface UserAuthOperations {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "properties".
+ */
+export interface Property {
+  id: number;
+  title: string;
+  /**
+   * Generated from the Albanian title. Changing it breaks existing links.
+   */
+  slug: string;
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Land hides rooms, floor and orientation.
+   */
+  propertyType: 'apartment' | 'villa' | 'house' | 'shop' | 'office' | 'warehouse' | 'land';
+  price?: number | null;
+  currency?: ('EUR' | 'ALL') | null;
+  priceOnRequest?: boolean | null;
+  /**
+   * Derived. For sorting only.
+   */
+  priceEur?: number | null;
+  rentPeriod?: ('monthly' | 'nightly') | null;
+  /**
+   * Price per m² is calculated from this.
+   */
+  areaGross: number;
+  areaNet?: number | null;
+  terraceSqm?: number | null;
+  commonAreaSqm?: number | null;
+  /**
+   * Albanian convention: 2+1, 1+1+2
+   */
+  rooms?: string | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  floor?: number | null;
+  /**
+   * Listings often quote two or three.
+   */
+  orientation?: ('N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW')[] | null;
+  listingType: 'sale' | 'rent';
+  /**
+   * Market state. Separate from published/draft.
+   */
+  status: 'available' | 'reserved' | 'sold';
+  buildingPhase?: ('brick' | 'facade' | 'finished' | 'existing') | null;
+  /**
+   * A primary filter in this market.
+   */
+  mortgageEligible?: boolean | null;
+  /**
+   * Filter facets. Add options in code, never free text.
+   */
+  features?:
+    | (
+        | 'parking'
+        | 'elevator'
+        | 'balcony'
+        | 'terrace'
+        | 'garden'
+        | 'pool'
+        | 'furnished'
+        | 'seaView'
+        | 'cityView'
+        | 'lakeView'
+        | 'heating'
+        | 'airConditioning'
+        | 'security'
+        | 'storage'
+        | 'streetFront'
+      )[]
+    | null;
+  gallery?:
+    | {
+        image: number | Media;
+        caption?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Set automatically on first publish.
+   */
+  publishedAt?: string | null;
+  /**
+   * e.g. ATM-2026-0142
+   */
+  reference?: string | null;
+  area: number | Area;
+  street?: string | null;
+  /**
+   * e.g. Pranë Rotondës
+   */
+  landmark?: string | null;
+  /**
+   * Drag the pin. Drives the map and radius search.
+   *
+   * @minItems 2
+   * @maxItems 2
+   */
+  location: [number, number];
+  /**
+   * Owns this listing. Only an admin can reassign it.
+   */
+  agent: number | User;
+  verified?: boolean | null;
+  featured?: boolean | null;
+  /**
+   * Public. What documentation Atmos has verified.
+   */
+  documentationNote?: string | null;
+  /**
+   * Private. Never rendered publicly.
+   */
+  ownerName?: string | null;
+  ownerPhone?: string | null;
+  internalNotes?: string | null;
+  /**
+   * The owner submission this came from.
+   */
+  sourceRequest?: (number | null) | ListingRequest;
+  seo?: {
+    /**
+     * Leave empty to generate from the title.
+     */
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    /**
+     * Falls back to the first gallery image.
+     */
+    ogImage?: (number | null) | Media;
+    noindex?: boolean | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media".
+ */
+export interface Media {
+  id: number;
+  /**
+   * Describe the photo. Required for anything shown to visitors.
+   */
+  alt?: string | null;
+  credit?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    thumb?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    card?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    hero?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    og?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "areas".
+ */
+export interface Area {
+  id: number;
+  name: string;
+  /**
+   * Generated from the Albanian title. Changing it breaks existing links.
+   */
+  slug: string;
+  kind: 'city' | 'neighbourhood';
+  parent?: (number | null) | Area;
+  /**
+   * @minItems 2
+   * @maxItems 2
+   */
+  center?: [number, number] | null;
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  seo?: {
+    /**
+     * Leave empty to generate from the title.
+     */
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    /**
+     * Falls back to the first gallery image.
+     */
+    ogImage?: (number | null) | Media;
+    noindex?: boolean | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
 export interface User {
-  id: string;
+  id: number;
+  name: string;
+  /**
+   * Only an admin can change a role.
+   */
+  role: 'admin' | 'agent' | 'client';
+  phone?: string | null;
+  photo?: (number | null) | Media;
+  bio?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -144,29 +425,381 @@ export interface User {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
+ * via the `definition` "listing-requests".
  */
-export interface Media {
-  id: string;
-  alt: string;
+export interface ListingRequest {
+  id: number;
+  requestStatus: 'new' | 'contacted' | 'verified' | 'published' | 'rejected';
+  ownerName: string;
+  ownerPhone: string;
+  ownerEmail?: string | null;
+  city: string;
+  areaName?: string | null;
+  address?: string | null;
+  listingType: 'sale' | 'rent';
+  propertyType?: string | null;
+  rooms?: string | null;
+  areaSqm?: number | null;
+  floor?: number | null;
+  askingPrice?: number | null;
+  description?: string | null;
+  photos?:
+    | {
+        image: number | Media;
+        id?: string | null;
+      }[]
+    | null;
+  hasDocumentation?: boolean | null;
+  termsVersion: string;
+  termsAcceptedAt: string;
+  submittedLocale?: string | null;
+  assignedAgent?: (number | null) | User;
+  internalNotes?: string | null;
+  rejectionReason?: string | null;
+  /**
+   * Set once the listing goes live.
+   */
+  linkedProperty?: (number | null) | Property;
   updatedAt: string;
   createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "project-units".
+ */
+export interface ProjectUnit {
+  id: number;
+  project: number | Project;
+  unitCode: string;
+  building?: string | null;
+  floorPlan?: (number | null) | Media;
+  title: string;
+  /**
+   * Generated from the Albanian title. Changing it breaks existing links.
+   */
+  slug: string;
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Land hides rooms, floor and orientation.
+   */
+  propertyType: 'apartment' | 'villa' | 'house' | 'shop' | 'office' | 'warehouse' | 'land';
+  price?: number | null;
+  currency?: ('EUR' | 'ALL') | null;
+  priceOnRequest?: boolean | null;
+  /**
+   * Derived. For sorting only.
+   */
+  priceEur?: number | null;
+  rentPeriod?: ('monthly' | 'nightly') | null;
+  /**
+   * Price per m² is calculated from this.
+   */
+  areaGross: number;
+  areaNet?: number | null;
+  terraceSqm?: number | null;
+  commonAreaSqm?: number | null;
+  /**
+   * Albanian convention: 2+1, 1+1+2
+   */
+  rooms?: string | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  floor?: number | null;
+  /**
+   * Listings often quote two or three.
+   */
+  orientation?: ('N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW')[] | null;
+  listingType: 'sale' | 'rent';
+  /**
+   * Market state. Separate from published/draft.
+   */
+  status: 'available' | 'reserved' | 'sold';
+  buildingPhase?: ('brick' | 'facade' | 'finished' | 'existing') | null;
+  /**
+   * A primary filter in this market.
+   */
+  mortgageEligible?: boolean | null;
+  /**
+   * Filter facets. Add options in code, never free text.
+   */
+  features?:
+    | (
+        | 'parking'
+        | 'elevator'
+        | 'balcony'
+        | 'terrace'
+        | 'garden'
+        | 'pool'
+        | 'furnished'
+        | 'seaView'
+        | 'cityView'
+        | 'lakeView'
+        | 'heating'
+        | 'airConditioning'
+        | 'security'
+        | 'storage'
+        | 'streetFront'
+      )[]
+    | null;
+  gallery?:
+    | {
+        image: number | Media;
+        caption?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Set automatically on first publish.
+   */
+  publishedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "projects".
+ */
+export interface Project {
+  id: number;
+  name: string;
+  /**
+   * Generated from the Albanian title. Changing it breaks existing links.
+   */
+  slug: string;
+  tagline?: string | null;
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  developer: number | Company;
+  area: number | Area;
+  /**
+   * @minItems 2
+   * @maxItems 2
+   */
+  location: [number, number];
+  constructionPhase: 'planning' | 'underConstruction' | 'completed';
+  completionDate?: string | null;
+  gallery?:
+    | {
+        image: number | Media;
+        caption?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  sitePlan?: (number | null) | Media;
+  brochure?: (number | null) | Media;
+  /**
+   * Derived from published units.
+   */
+  unitTypesSummary?:
+    | {
+        rooms?: string | null;
+        areaFrom?: number | null;
+        areaTo?: number | null;
+        priceFrom?: number | null;
+        availableCount?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  featured?: boolean | null;
+  publishedAt?: string | null;
+  seo?: {
+    /**
+     * Leave empty to generate from the title.
+     */
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    /**
+     * Falls back to the first gallery image.
+     */
+    ogImage?: (number | null) | Media;
+    noindex?: boolean | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "companies".
+ */
+export interface Company {
+  id: number;
+  name: string;
+  /**
+   * Generated from the Albanian title. Changing it breaks existing links.
+   */
+  slug: string;
+  about?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  logo?: (number | null) | Media;
+  coverImage?: (number | null) | Media;
+  foundedYear?: number | null;
+  website?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  socials?:
+    | {
+        platform?: ('facebook' | 'instagram' | 'linkedin' | 'youtube' | 'tiktok') | null;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  areasOfOperation?: (number | Area)[] | null;
+  certifications?:
+    | {
+        title: string;
+        issuer?: string | null;
+        year?: number | null;
+        document?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Admin only. Drives the partner badge.
+   */
+  verifiedPartner?: boolean | null;
+  legalName?: string | null;
+  /**
+   * Albanian tax ID. Internal.
+   */
+  nipt?: string | null;
+  seo?: {
+    /**
+     * Leave empty to generate from the title.
+     */
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    /**
+     * Falls back to the first gallery image.
+     */
+    ogImage?: (number | null) | Media;
+    noindex?: boolean | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "articles".
+ */
+export interface Article {
+  id: number;
+  title: string;
+  /**
+   * Generated from the Albanian title. Changing it breaks existing links.
+   */
+  slug: string;
+  excerpt?: string | null;
+  body?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  coverImage?: (number | null) | Media;
+  category: 'buying' | 'selling' | 'investment' | 'documentation' | 'market' | 'projects';
+  relatedAreas?: (number | Area)[] | null;
+  relatedCompanies?: (number | Company)[] | null;
+  relatedProjects?: (number | Project)[] | null;
+  author?: (number | null) | User;
+  publishedAt?: string | null;
+  /**
+   * Sponsored content must be labelled on the page. Not optional.
+   */
+  contentType: 'editorial' | 'analysis' | 'sponsored';
+  seo?: {
+    /**
+     * Leave empty to generate from the title.
+     */
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    /**
+     * Falls back to the first gallery image.
+     */
+    ogImage?: (number | null) | Media;
+    noindex?: boolean | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "enquiries".
+ */
+export interface Enquiry {
+  id: number;
+  name: string;
+  phone: string;
+  email?: string | null;
+  message?: string | null;
+  sourceType: 'property' | 'unit' | 'project';
+  sourceId: string;
+  sourceTitle?: string | null;
+  locale?: string | null;
+  handled?: boolean | null;
+  assignedAgent?: (number | null) | User;
+  termsVersion?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
-  id: string;
+  id: number;
   key: string;
   data:
     | {
@@ -183,20 +816,52 @@ export interface PayloadKv {
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: string;
+  id: number;
   document?:
     | ({
+        relationTo: 'properties';
+        value: number | Property;
+      } | null)
+    | ({
+        relationTo: 'project-units';
+        value: number | ProjectUnit;
+      } | null)
+    | ({
+        relationTo: 'projects';
+        value: number | Project;
+      } | null)
+    | ({
+        relationTo: 'companies';
+        value: number | Company;
+      } | null)
+    | ({
+        relationTo: 'areas';
+        value: number | Area;
+      } | null)
+    | ({
+        relationTo: 'articles';
+        value: number | Article;
+      } | null)
+    | ({
+        relationTo: 'listing-requests';
+        value: number | ListingRequest;
+      } | null)
+    | ({
+        relationTo: 'enquiries';
+        value: number | Enquiry;
+      } | null)
+    | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null)
     | ({
         relationTo: 'media';
-        value: string | Media;
+        value: number | Media;
       } | null);
   globalSlug?: string | null;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   updatedAt: string;
   createdAt: string;
@@ -206,10 +871,10 @@ export interface PayloadLockedDocument {
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: string;
+  id: number;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   key?: string | null;
   value?:
@@ -229,7 +894,7 @@ export interface PayloadPreference {
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: string;
+  id: number;
   name?: string | null;
   batch?: number | null;
   updatedAt: string;
@@ -237,9 +902,318 @@ export interface PayloadMigration {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "properties_select".
+ */
+export interface PropertiesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  description?: T;
+  propertyType?: T;
+  price?: T;
+  currency?: T;
+  priceOnRequest?: T;
+  priceEur?: T;
+  rentPeriod?: T;
+  areaGross?: T;
+  areaNet?: T;
+  terraceSqm?: T;
+  commonAreaSqm?: T;
+  rooms?: T;
+  bedrooms?: T;
+  bathrooms?: T;
+  floor?: T;
+  orientation?: T;
+  listingType?: T;
+  status?: T;
+  buildingPhase?: T;
+  mortgageEligible?: T;
+  features?: T;
+  gallery?:
+    | T
+    | {
+        image?: T;
+        caption?: T;
+        id?: T;
+      };
+  publishedAt?: T;
+  reference?: T;
+  area?: T;
+  street?: T;
+  landmark?: T;
+  location?: T;
+  agent?: T;
+  verified?: T;
+  featured?: T;
+  documentationNote?: T;
+  ownerName?: T;
+  ownerPhone?: T;
+  internalNotes?: T;
+  sourceRequest?: T;
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+        ogImage?: T;
+        noindex?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "project-units_select".
+ */
+export interface ProjectUnitsSelect<T extends boolean = true> {
+  project?: T;
+  unitCode?: T;
+  building?: T;
+  floorPlan?: T;
+  title?: T;
+  slug?: T;
+  description?: T;
+  propertyType?: T;
+  price?: T;
+  currency?: T;
+  priceOnRequest?: T;
+  priceEur?: T;
+  rentPeriod?: T;
+  areaGross?: T;
+  areaNet?: T;
+  terraceSqm?: T;
+  commonAreaSqm?: T;
+  rooms?: T;
+  bedrooms?: T;
+  bathrooms?: T;
+  floor?: T;
+  orientation?: T;
+  listingType?: T;
+  status?: T;
+  buildingPhase?: T;
+  mortgageEligible?: T;
+  features?: T;
+  gallery?:
+    | T
+    | {
+        image?: T;
+        caption?: T;
+        id?: T;
+      };
+  publishedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "projects_select".
+ */
+export interface ProjectsSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  tagline?: T;
+  description?: T;
+  developer?: T;
+  area?: T;
+  location?: T;
+  constructionPhase?: T;
+  completionDate?: T;
+  gallery?:
+    | T
+    | {
+        image?: T;
+        caption?: T;
+        id?: T;
+      };
+  sitePlan?: T;
+  brochure?: T;
+  unitTypesSummary?:
+    | T
+    | {
+        rooms?: T;
+        areaFrom?: T;
+        areaTo?: T;
+        priceFrom?: T;
+        availableCount?: T;
+        id?: T;
+      };
+  featured?: T;
+  publishedAt?: T;
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+        ogImage?: T;
+        noindex?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "companies_select".
+ */
+export interface CompaniesSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  about?: T;
+  logo?: T;
+  coverImage?: T;
+  foundedYear?: T;
+  website?: T;
+  phone?: T;
+  email?: T;
+  socials?:
+    | T
+    | {
+        platform?: T;
+        url?: T;
+        id?: T;
+      };
+  areasOfOperation?: T;
+  certifications?:
+    | T
+    | {
+        title?: T;
+        issuer?: T;
+        year?: T;
+        document?: T;
+        id?: T;
+      };
+  verifiedPartner?: T;
+  legalName?: T;
+  nipt?: T;
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+        ogImage?: T;
+        noindex?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "areas_select".
+ */
+export interface AreasSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  kind?: T;
+  parent?: T;
+  center?: T;
+  description?: T;
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+        ogImage?: T;
+        noindex?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "articles_select".
+ */
+export interface ArticlesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  excerpt?: T;
+  body?: T;
+  coverImage?: T;
+  category?: T;
+  relatedAreas?: T;
+  relatedCompanies?: T;
+  relatedProjects?: T;
+  author?: T;
+  publishedAt?: T;
+  contentType?: T;
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+        ogImage?: T;
+        noindex?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "listing-requests_select".
+ */
+export interface ListingRequestsSelect<T extends boolean = true> {
+  requestStatus?: T;
+  ownerName?: T;
+  ownerPhone?: T;
+  ownerEmail?: T;
+  city?: T;
+  areaName?: T;
+  address?: T;
+  listingType?: T;
+  propertyType?: T;
+  rooms?: T;
+  areaSqm?: T;
+  floor?: T;
+  askingPrice?: T;
+  description?: T;
+  photos?:
+    | T
+    | {
+        image?: T;
+        id?: T;
+      };
+  hasDocumentation?: T;
+  termsVersion?: T;
+  termsAcceptedAt?: T;
+  submittedLocale?: T;
+  assignedAgent?: T;
+  internalNotes?: T;
+  rejectionReason?: T;
+  linkedProperty?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "enquiries_select".
+ */
+export interface EnquiriesSelect<T extends boolean = true> {
+  name?: T;
+  phone?: T;
+  email?: T;
+  message?: T;
+  sourceType?: T;
+  sourceId?: T;
+  sourceTitle?: T;
+  locale?: T;
+  handled?: T;
+  assignedAgent?: T;
+  termsVersion?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  name?: T;
+  role?: T;
+  phone?: T;
+  photo?: T;
+  bio?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -263,6 +1237,7 @@ export interface UsersSelect<T extends boolean = true> {
  */
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
+  credit?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -274,6 +1249,50 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+  sizes?:
+    | T
+    | {
+        thumb?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        card?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        hero?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        og?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

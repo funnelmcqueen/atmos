@@ -48,20 +48,23 @@ const seed = async () => {
     payload.logger.info(`cleared ${slug}`)
   }
 
-  const cityIds: Record<string, string | number> = {}
+  const cityIds: Record<string, number> = {}
   for (const city of CITIES) {
     const doc = await payload.create({
       collection: 'areas',
-      data: { name: city.name, kind: 'city', center: city.center },
+      // slug is required on the type; the slugField hook slugifies whatever we
+      // pass, so handing it the source name is equivalent to letting the hook
+      // derive it and keeps `tsc` happy.
+      data: { name: city.name, slug: city.name, kind: 'city', center: city.center },
     })
     cityIds[city.name] = doc.id
   }
 
-  const areaIds: Record<string, string | number> = {}
+  const areaIds: Record<string, number> = {}
   for (const n of NEIGHBOURHOODS) {
     const doc = await payload.create({
       collection: 'areas',
-      data: { name: n.name, kind: 'neighbourhood', parent: cityIds[n.city], center: n.center },
+      data: { name: n.name, slug: n.name, kind: 'neighbourhood', parent: cityIds[n.city], center: n.center },
     })
     areaIds[n.name] = doc.id
   }
@@ -70,6 +73,7 @@ const seed = async () => {
     collection: 'companies',
     data: {
       name: 'Orbital Construction',
+      slug: 'orbital-construction',
       foundedYear: 2011,
       phone: '+355 69 20 11 445',
       email: 'info@orbital.al',
@@ -83,6 +87,7 @@ const seed = async () => {
     collection: 'projects',
     data: {
       name: 'Orbital 3 Residence',
+      slug: 'orbital-3-residence',
       tagline: 'Rezidencë moderne në Bulevardin e Ri',
       developer: company.id,
       area: areaIds['Bulevardi i Ri'],
@@ -146,12 +151,37 @@ const seed = async () => {
     { title: 'Apartament 2+1 në Kompleksin Aura', type: 'apartment', area: 'Laprakë', street: 'Rruga Dritan Hoxha', rooms: '2+1', gross: 105.6, price: 184800, currency: 'EUR', listing: 'sale', status: 'sold', floor: 2, mortgage: true, phase: 'finished' },
   ] as const
 
+  // Properties require an owning agent (access.updateOwnListing). The seed
+  // leaves existing users alone, so find-or-create a dedicated agent to assign
+  // every seeded listing to. The `agent` beforeChange hook only fills this from
+  // req.user, which the Local API has none of here.
+  const agentEmail = 'seed-agent@atmos.al'
+  const existingAgent = await payload.find({
+    collection: 'users',
+    where: { email: { equals: agentEmail } },
+    limit: 1,
+    depth: 0,
+  })
+  const agent =
+    existingAgent.docs[0] ??
+    (await payload.create({
+      collection: 'users',
+      data: {
+        name: 'Seed Agent',
+        email: agentEmail,
+        password: 'seed-agent-pw',
+        role: 'agent',
+      },
+    }))
+
   let counter = 1
   for (const p of properties) {
     await payload.create({
       collection: 'properties',
       data: {
         title: p.title,
+        slug: p.title,
+        agent: agent.id,
         propertyType: p.type,
         price: 'price' in p ? p.price : undefined,
         currency: p.currency,
