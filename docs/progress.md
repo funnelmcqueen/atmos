@@ -35,6 +35,58 @@
 ## cacheComponents — 9 Aug 2026
 
 - **Built:** Turned on `cacheComponents` (Next 16.2, stable) so the project page could be a static shell with the unit table as its one dynamic hole — the thing the previous entry said needed a bigger decision. Every route is now `◐` in the build output: prerendered HTML with server-streamed dynamic content. `/[locale]/projekte/[slug]` prerenders the gallery, heading, availability count, description, site plan, map, developer aside and **both JSON-LD blocks**; only `<FilteredUnitTable>` — which awaits `searchParams` — streams. The 6.6 KB shell on disk contains the Residence + Offer markup and zero table rows; a real request returns 39 KB with the full table, so crawlers still get every sold unit. `/prona` got the same treatment, its whole result set (count, filter panel, map, grid, pagination) behind one boundary, which turned it from fully dynamic into a static shell too.
-- **Broke / had to change:** More than one page. (1) **`export const revalidate` is disallowed under cacheComponents** — it had to come off all five ISR pages, so the one-hour window moved onto a named `content` cache profile in `next.config.ts` (`stale 5m / revalidate 1h / expire 1y`) declared by each read function via `'use cache'` + `cacheLife('content')`. Eighteen read functions across `lib/{listings,projects,companies,property-detail}.ts` are now cached; `searchListings` and `searchListingsInBounds` deliberately are not. (2) **Awaiting `params` is itself an uncached read**, so the paramless `[locale]` index routes (`/prona`, `/kompani`, `/projekte`) each needed a `generateStaticParams` over `LOCALES` before they would prerender at all. (3) The **Payload starter homepage** called `payload.auth(headers)` at the top level and blocked its own prerender; the greeting moved behind Suspense. It is still the starter page — docs/12 keeps the real homepage last. (4) A codemod mangled `lib/listings.ts` because that file is CRLF and the others are LF — reverted and redone; worth knowing this repo has mixed line endings.
-- **Watch out for:** Soft navigation now keeps the previous tree mounted until the next route commits, so during a client-side nav both pages' `<h1>`s are briefly in the DOM — in `next dev` that window lasts as long as compiling the target route. It failed a Playwright assertion that read `page.locator('h1')` straight after `waitForURL`; the test now asserts the destination on a clean load instead. The admin spec's `beforeAll` also timed out once on a cold dev server and passed warm — the pre-existing cold-start cost `playwright.config.ts` already documents, not a Payload/cacheComponents conflict. Payload admin builds and runs fine under it (`◐`).
+- **Broke / had to change:** More than one page. (1) **`export const revalidate` is disallowed under cacheComponents** — it had to come off all five ISR pages, so the one-hour window moved onto a named `content` cache profile in `next.config.ts` (`stale 5m / revalidate 1h / expire 1y`) declared by each read function via `'use cache'` + `cacheLife('content')`. Nineteen read functions across `lib/{listings,projects,companies,property-detail}.ts` are now cached; `searchListings` and `searchListingsInBounds` deliberately are not. The whole model is written up in `docs/13-caching.md`, and CLAUDE.md rule 11 points at it. (2) **Awaiting `params` is itself an uncached read**, so the paramless `[locale]` index routes (`/prona`, `/kompani`, `/projekte`) each needed a `generateStaticParams` over `LOCALES` before they would prerender at all. (3) The **Payload starter homepage** called `payload.auth(headers)` at the top level and blocked its own prerender; the greeting moved behind Suspense. It is still the starter page — docs/12 keeps the real homepage last. (4) A codemod mangled `lib/listings.ts` because that file is CRLF and the others are LF — reverted and redone; worth knowing this repo has mixed line endings.
+- **Watch out for:** Two testing effects, both written up under **Known quirks** at the end of this file — soft navigation now leaves the previous page's `<h1>` in the DOM until the next route commits, which broke a Playwright assertion; and the admin spec's cold-start timeout, which is pre-existing and not a Payload/cacheComponents conflict. Payload admin builds and runs fine under it (`◐`).
 - **Verified:** `typecheck`, `lint` (0 errors), `build`, `test:e2e` 33/33, plus production-server checks that sort, filter, sold-unit visibility, the Residence markup and the single-marker map all still behave.
+
+---
+
+# Known quirks
+
+Things that look like bugs, are not, and cost someone an hour already. Add to
+this rather than rediscovering.
+
+## Two `<h1>`s during a client-side navigation
+
+**Symptom.** A Playwright assertion on `page.locator('h1')` straight after
+`page.waitForURL(...)` fails with a strict-mode violation resolving to two
+elements — the destination's heading *and* the previous page's.
+
+**Why.** Since `cacheComponents` landed, `waitForURL` and "the new page is
+rendered" are further apart than they used to be. The URL changes when a soft
+navigation *starts*; React keeps the previous tree mounted until the next route
+is ready to commit. In `next dev` "ready" includes compiling the target route on
+demand, so the overlap can last many seconds — long past a 5s expect timeout.
+Nothing is stuck and nothing is duplicated in the final DOM; a real user just
+sees the old page until the new one is ready, which is the intended behaviour of
+a React transition.
+
+**What to do.** Do not assert on the destination mid-transition. Either scope the
+assertion to something that only exists on the new page, or — better, and what
+`tests/e2e/projects.e2e.spec.ts` does — assert that the click changed the URL,
+then `page.goto()` the href and assert the content on a clean load. Chasing it
+with longer timeouts or `waitForLoadState` is testing the dev server's compile
+speed, not the app.
+
+**Do not** "fix" this by removing the Suspense boundaries or turning
+`cacheComponents` off — see `docs/13-caching.md`.
+
+## Playwright's first admin request can exceed the 30s hook timeout
+
+The admin spec's `beforeAll` occasionally times out on a cold dev server and
+passes on a warm one. This predates `cacheComponents` and is already explained in
+`playwright.config.ts` — the Payload admin bundle is expensive to compile on
+first request. It is not a Payload/cacheComponents conflict; the admin builds and
+runs fine (`◐` in the route table). Re-run before investigating.
+
+## `pnpm seed` wipes attached photos
+
+`scripts/attach-photos.ts` has to run after every `pnpm seed`, or the properties
+photo e2e test fails on a seed with no galleries. The seed clears the collections
+it owns, and media attachments go with them.
+
+## Mixed line endings
+
+`src/lib/listings.ts` is CRLF; most files written since are LF. Any regex-based
+codemod over the repo needs `\r?\n`, or it silently matches nothing in some files
+and corrupts others.

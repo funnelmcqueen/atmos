@@ -67,6 +67,14 @@ No Redux, no state library — server components and URL search params carry sta
 10. **All visual work follows `docs/12-design.md`.** Read it before
     building any component or page.
 
+11. **`cacheComponents` is on app-wide — never add `export const revalidate`.**
+    It is disallowed and fails the build. Caching is declared per read function
+    with `'use cache'` + `cacheLife('content')`, not per page. Anything that
+    reads `searchParams`, `cookies()` or `headers()` goes in its own component
+    behind `<Suspense>`, and every page under `[locale]` needs
+    `generateStaticParams`. Read `docs/13-caching.md` before adding a page or a
+    read function.
+
 ## Definition of done
 
 A task is not finished until all of these pass:
