@@ -1,67 +1,73 @@
-# Payload Blank Template
+# Atmos bootstrap
 
-This template comes configured with the bare minimum to get started on anything you need.
+Day-one scaffolding for the Atmos Real Estate build. Drop these into a fresh
+Payload + Next.js repo before writing any pages.
 
-## Quick start
+## What's here
 
-This template can be deployed directly from our Cloud hosting and it will setup MongoDB and cloud S3 object storage for media.
+```
+CLAUDE.md              build rules — Claude Code reads this every session
+docs/                  the vision doc, split by domain
+src/payload.config.ts  locales, db, storage, collections
+src/collections/       the data model
+src/fields/            shared field groups (listing, slug, seo)
+src/access/            role, ownership and draft access control
+db/listing-index.sql   the search view that unions properties and units
+scripts/seed.ts        realistic Albanian seed data
+src/styles/tokens.css  the approved palette and type scale
+```
 
-## Quick Start - local setup
+## Order of operations
 
-To spin up this template locally, follow these steps:
+```bash
+pnpm create payload-app@latest atmos --template blank --db postgres
+cd atmos
+```
 
-### Clone
+1. Copy this bootstrap over the generated app.
+2. Fill `.env` (see below).
+3. `pnpm payload migrate:create initial` — check the generated table names
+   against `db/listing-index.sql` before step 4.
+4. Add a custom migration that runs `db/listing-index.sql`, then
+   `pnpm payload migrate`.
+5. `pnpm seed`
+6. `pnpm dev`, open `/admin`, create the first admin user.
+7. Confirm the seed data is visible in the admin before building any page.
 
-After you click the `Deploy` button above, you'll want to have standalone copy of this repo on your machine. If you've already cloned this repo, skip to [Development](#development).
+Do not skip step 7. Every page after this gets built against real rows.
 
-### Development
+## Env
 
-1. First [clone the repo](#clone) if you have not done so already
-2. `cd my-project && cp .env.example .env` to copy the example environment variables. You'll need to add the `MONGODB_URL` from your Cloud project to your `.env` if you want to use S3 storage and the MongoDB database that was created for you.
+```
+DATABASE_URL=              # Neon pooled connection string
+PAYLOAD_SECRET=            # openssl rand -hex 32
+BLOB_READ_WRITE_TOKEN=     # Vercel Blob
+NEXT_PUBLIC_MAPTILER_KEY=
+RESEND_API_KEY=
+NEXT_PUBLIC_SITE_URL=https://atmos.al
+```
 
-3. `pnpm install && pnpm dev` to install dependencies and start the dev server
-4. open `http://localhost:3000` to open the app in your browser
+## Scripts to add to package.json
 
-That's it! Changes made in `./src` will be reflected in your app. Follow the on-screen instructions to login and create your first admin user. Then check out [Production](#production) once you're ready to build and serve your app, and [Deployment](#deployment) when you're ready to go live.
+```json
+{
+  "seed": "tsx scripts/seed.ts",
+  "typecheck": "tsc --noEmit",
+  "test:e2e": "playwright test"
+}
+```
 
-#### Docker (Optional)
+## First smoke tests
 
-If you prefer to use Docker for local development instead of a local MongoDB instance, the provided docker-compose.yml file can be used.
+Write these before the first page, and keep them passing:
 
-To do so, follow these steps:
+- `/sq` renders and returns 200
+- `/sq/prona` lists at least one property
+- `/sq/prona/[slug]` renders for a seeded slug
+- `/sq/projekte/[slug]` renders the unit table
+- `/en/prona/[slug]` renders the same entity in English
+- a draft property returns 404 to an anonymous request
+- an agent cannot update a property assigned to another agent
 
-- Modify the `MONGODB_URL` in your `.env` file to `mongodb://127.0.0.1/<dbname>`
-- Modify the `docker-compose.yml` file's `MONGODB_URL` to match the above `<dbname>`
-- Run `docker-compose up` to start the database, optionally pass `-d` to run in the background.
-
-## How it works
-
-The Payload config is tailored specifically to the needs of most websites. It is pre-configured in the following ways:
-
-### Collections
-
-See the [Collections](https://payloadcms.com/docs/configuration/collections) docs for details on how to extend this functionality.
-
-- #### Users (Authentication)
-
-  Users are auth-enabled collections that have access to the admin panel.
-
-  For additional help, see the official [Auth Example](https://github.com/payloadcms/payload/tree/3.x/examples/auth) or the [Authentication](https://payloadcms.com/docs/authentication/overview#authentication-overview) docs.
-
-- #### Media
-
-  This is the uploads enabled collection. It features pre-configured sizes, focal point and manual resizing to help you manage your pictures.
-
-### Docker
-
-Alternatively, you can use [Docker](https://www.docker.com) to spin up this template locally. To do so, follow these steps:
-
-1. Follow [steps 1 and 2 from above](#development), the docker-compose file will automatically use the `.env` file in your project root
-1. Next run `docker-compose up`
-1. Follow [steps 4 and 5 from above](#development) to login and create your first admin user
-
-That's it! The Docker instance will help you get up and running quickly while also standardizing the development environment across your teams.
-
-## Questions
-
-If you have any issues or questions, reach out to us on [Discord](https://discord.com/invite/payload) or start a [GitHub discussion](https://github.com/payloadcms/payload/discussions).
+That last one is the important one. It is the difference between a platform the
+client trusts and an incident.
