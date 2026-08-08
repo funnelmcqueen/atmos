@@ -3,7 +3,7 @@ import Image from 'next/image'
 import type { ListingCard, CardThumb } from '@/lib/listings'
 import type { Locale } from '@/messages/sq'
 import { PROPERTY_TYPE_LABELS, t } from '@/messages/sq'
-import { formatPrice, formatArea, formatPerSqm } from '@/lib/format'
+import { formatPrice, formatArea, pricePerSqm } from '@/lib/format'
 import { StatusBadge } from './StatusBadge'
 import { Badge } from './Badge'
 
@@ -59,6 +59,11 @@ export function PropertyCard({
       ? t.card.priceOnRequest
       : `${formatPrice(card.price, card.currency)}${rentSuffix}`
 
+  // Guarded helper: null for rent, price-on-request or missing inputs, so a
+  // rental never shows a nonsensical €/m² (docs/12-design.md). Never render the
+  // view's raw price_per_sqm here — it is computed for rent rows too.
+  const psqm = pricePerSqm(card.priceEur, card.areaGross, card.listingType, card.priceOnRequest)
+
   const location = [card.street, card.areaName].filter(Boolean).join(', ')
 
   const target = href === undefined ? `/${locale}/prona/${card.slug}` : href
@@ -66,7 +71,7 @@ export function PropertyCard({
   const inner = (
     <>
       <div className="card__media" aria-hidden="true">
-        {thumbnail && (
+        {thumbnail ? (
           <Image
             src={thumbnail.url}
             alt=""
@@ -74,6 +79,10 @@ export function PropertyCard({
             sizes="(max-width: 700px) 100vw, 300px"
             className="card__img"
           />
+        ) : (
+          // A marked placeholder, not a bare grey box — an empty media area must
+          // not read as a broken image (docs/12-design.md).
+          <span className="card__placeholder">{t.card.noPhoto}</span>
         )}
         <span className="card__type">{typeLabel}</span>
       </div>
@@ -91,9 +100,7 @@ export function PropertyCard({
 
         <div className="card__price-row">
           <span className="card__price">{priceText}</span>
-          {card.pricePerSqm !== null && (
-            <span className="card__psqm">{formatPerSqm(card.pricePerSqm)}</span>
-          )}
+          {psqm && <span className="card__psqm">{psqm}</span>}
         </div>
 
         <p className="card__meta">

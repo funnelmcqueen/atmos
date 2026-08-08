@@ -10,6 +10,7 @@ import { PropertyGallery } from '@/components/PropertyGallery'
 import { PropertySpecs } from '@/components/PropertySpecs'
 import { FeatureGrid } from '@/components/FeatureGrid'
 import { AgentCard } from '@/components/AgentCard'
+import { ContactBar } from '@/components/ContactBar'
 import { LocationPanel } from '@/components/LocationPanel'
 import { PropertyCard } from '@/components/PropertyCard'
 import { StatusBadge } from '@/components/StatusBadge'
@@ -235,6 +236,9 @@ export default async function PropertyDetailPage({
           </div>
         </section>
       )}
+
+      {/* Mobile-only sticky Call/WhatsApp bar; the desktop aside keeps AgentCard. */}
+      <ContactBar phone={agent?.phone ?? null} />
     </main>
   )
 }

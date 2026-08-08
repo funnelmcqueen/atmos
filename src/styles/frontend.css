@@ -157,10 +157,22 @@
 }
 
 /* --- Card ----------------------------------------------------------------- */
+/* Three across desktop, two tablet, one mobile — abundance, not a gallery show
+   (docs/12-design.md). Explicit counts, not auto-fill, so the density is fixed. */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-4);
+}
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .card {
@@ -193,6 +205,18 @@
   height: 100%;
   object-fit: cover;
 }
+.card__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: var(--step--1);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  color: var(--muted);
+}
 .card__type {
   position: relative; /* sit above the cover photo */
   z-index: 1;
@@ -212,6 +236,12 @@
   flex-wrap: wrap;
   gap: var(--space-1);
   margin-bottom: var(--space-2);
+}
+/* An available, unverified, non-mortgage listing earns no badge — collapse the
+   row so it leaves no gap (docs/12-design.md). */
+.card__badges:empty,
+.detail-head__badges:empty {
+  display: none;
 }
 .card__title {
   font-family: var(--font-display);
@@ -234,6 +264,8 @@
 .card__price {
   font-family: var(--font-display);
   font-size: var(--step-1);
+  /* The accent marks the price — one of its only two uses (docs/12-design.md). */
+  color: var(--accent);
 }
 .card__psqm,
 .card__meta {
@@ -253,10 +285,12 @@
   border: 1px solid var(--line);
   white-space: nowrap;
 }
+/* Mortgage flag. Not brass — the accent belongs to the price and the primary
+   action only (docs/12-design.md); this reads on surface/line like any badge. */
 .badge--accent {
-  border-color: var(--accent);
-  color: var(--accent-ink);
-  background: var(--accent);
+  border-color: var(--line);
+  color: var(--text);
+  background: var(--surface-2);
 }
 .status-badge {
   color: var(--surface);
@@ -298,10 +332,11 @@
   border-radius: var(--radius);
   color: var(--muted);
 }
+/* Current page marked with text/line weight, not brass (docs/12-design.md). */
 .pagination__page--current {
-  background: var(--accent);
-  color: var(--accent-ink);
-  border-color: var(--accent);
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--text);
 }
 .pagination__step--disabled {
   opacity: 0.4;
@@ -356,6 +391,8 @@
 .detail-head__price {
   font-family: var(--font-display);
   font-size: var(--step-3);
+  /* The accent marks the price — one of its only two uses (docs/12-design.md). */
+  color: var(--accent);
 }
 .detail-head__psqm {
   color: var(--muted);
@@ -506,6 +543,33 @@
   color: var(--muted);
   font-size: var(--step--1);
   margin-top: var(--space-4);
+}
+
+/* Mobile sticky contact bar. Hidden on desktop (AgentCard in the aside carries
+   the same actions); on mobile it pins Call/WhatsApp at thumb height — the
+   listing's main lead path (docs/12-design.md). */
+.contact-bar {
+  display: none;
+}
+@media (max-width: 900px) {
+  .contact-bar {
+    display: flex;
+    gap: var(--space-2);
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    padding: var(--space-2);
+    padding-bottom: calc(var(--space-2) + env(safe-area-inset-bottom));
+    background: var(--header);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid var(--line);
+  }
+  .contact-bar__action {
+    flex: 1;
+    min-height: 44px; /* thumb target */
+  }
 }
 
 /* --- Companies: list card ------------------------------------------------- */

@@ -143,6 +143,7 @@ export const t = {
     perMonth: '/muaj',
     priceOnRequest: 'Çmimi me kërkesë',
     perSqm: '/m²',
+    noPhoto: 'Pa foto',
   },
   map: {
     regionLabel: 'Harta e pronave',
@@ -169,6 +170,8 @@ export const t = {
     enquiryForm: 'Dërgo kërkesë',
     enquiryWhatsapp: 'WhatsApp',
     enquiryCall: 'Kërko një telefonatë',
+    contactBarLabel: 'Kontakto agjentin',
+    call: 'Telefono',
     specs: {
       rooms: 'Dhoma',
       bedrooms: 'Dhoma gjumi',
