@@ -15,8 +15,18 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  /*
+   * Always serial, locally as well as on CI.
+   *
+   * The suite runs against `next dev`, which compiles routes on first request.
+   * Parallel workers hitting different uncompiled routes at once — the Payload
+   * admin bundle worst of all — push the first request past the 30s hook
+   * timeout, so admin's beforeAll login fails and takes its whole describe
+   * block with it. That looks like a broken app and is only cold-start cost.
+   * One worker trades a couple of minutes of wall clock for a suite whose red
+   * means something.
+   */
+  workers: 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
