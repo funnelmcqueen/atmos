@@ -40,6 +40,39 @@ export const breadcrumbLd = (items: { name: string; url: string }[]): JsonLd => 
 })
 
 /**
+ * Organization for a company profile (docs/04): name, logo, url, sameAs
+ * (socials), address. `url` is the canonical company-page URL. `logoUrl` and
+ * `sameAs` are omitted when absent — the seed company has no logo or socials,
+ * and an empty logo/sameAs is worse than none for rich results.
+ */
+export const organizationLd = (args: {
+  name: string
+  url: string
+  logoUrl: string | null
+  sameAs: string[]
+}): JsonLd => {
+  const { name, url, logoUrl, sameAs } = args
+
+  const ld: JsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name,
+    url,
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: 'Tiranë',
+      addressRegion: 'Tiranë',
+      addressCountry: 'AL',
+    },
+  }
+
+  if (logoUrl) ld.logo = logoUrl.startsWith('http') ? logoUrl : `${SITE_URL}${logoUrl}`
+  if (sameAs.length > 0) ld.sameAs = sameAs
+
+  return ld
+}
+
+/**
  * RealEstateListing for a property (docs/02). Address uses the area name and
  * Tiranë, AL as the client specified. Price and priceCurrency are omitted for
  * price-on-request; floorSize is gross area in square metres.

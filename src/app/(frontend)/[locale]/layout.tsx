@@ -29,6 +29,7 @@ export default async function LocaleLayout({
         </Link>
         <nav className="site-header__nav">
           <Link href={`/${locale}/prona`}>{t.nav.properties}</Link>
+          <Link href={`/${locale}/kompani`}>{t.nav.companies}</Link>
         </nav>
       </header>
       {children}

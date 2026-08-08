@@ -8,14 +8,27 @@ import { Badge } from './Badge'
 
 /**
  * One listing on a grid. Reused by the /prona list, similar-properties, and
- * later the map popup and company page — so it takes a `listing_index` row
- * (via ListingCard) and nothing route-specific.
+ * the company page — so it takes a `listing_index` row (via ListingCard) and
+ * nothing route-specific.
  *
  * The view has no title column (title is localized), so the heading is composed
  * from structured columns: "Apartament 2+1 në Astir", or "Truall / Tokë në
  * Golem" for land, which has no rooms.
+ *
+ * `href` overrides the link target; default is /[locale]/prona/[slug]. Pass
+ * `null` to render the card unlinked — the company page does this for project
+ * units, which have no detail route until the projects slice adds one (then it
+ * passes a real unit href here instead of null).
  */
-export function PropertyCard({ card, locale }: { card: ListingCard; locale: Locale }) {
+export function PropertyCard({
+  card,
+  locale,
+  href,
+}: {
+  card: ListingCard
+  locale: Locale
+  href?: string | null
+}) {
   const typeLabel = PROPERTY_TYPE_LABELS[card.propertyType] ?? card.propertyType
   const heading = [typeLabel, card.rooms, card.areaName ? `në ${card.areaName}` : null]
     .filter(Boolean)
@@ -35,35 +48,47 @@ export function PropertyCard({ card, locale }: { card: ListingCard; locale: Loca
 
   const location = [card.street, card.areaName].filter(Boolean).join(', ')
 
+  const target = href === undefined ? `/${locale}/prona/${card.slug}` : href
+
+  const inner = (
+    <>
+      <div className="card__media" aria-hidden="true">
+        <span className="card__type">{typeLabel}</span>
+      </div>
+      <div className="card__body">
+        <div className="card__badges">
+          <StatusBadge status={card.status} />
+          {card.verified && <Badge>{t.badge.verified}</Badge>}
+          {card.mortgageEligible && <Badge tone="accent">{t.badge.mortgage}</Badge>}
+        </div>
+
+        <h3 className="card__title">{heading}</h3>
+        {location && <p className="card__location">{location}</p>}
+
+        <div className="card__price-row">
+          <span className="card__price">{priceText}</span>
+          {card.pricePerSqm !== null && (
+            <span className="card__psqm">{formatPerSqm(card.pricePerSqm)}</span>
+          )}
+        </div>
+
+        <p className="card__meta">
+          {formatArea(card.areaGross)}
+          {card.floor !== null ? ` · ${t.detail.specs.floor} ${card.floor}` : ''}
+        </p>
+      </div>
+    </>
+  )
+
   return (
     <article className="card">
-      <Link href={`/${locale}/prona/${card.slug}`} className="card__link">
-        <div className="card__media" aria-hidden="true">
-          <span className="card__type">{typeLabel}</span>
-        </div>
-        <div className="card__body">
-          <div className="card__badges">
-            <StatusBadge status={card.status} />
-            {card.verified && <Badge>{t.badge.verified}</Badge>}
-            {card.mortgageEligible && <Badge tone="accent">{t.badge.mortgage}</Badge>}
-          </div>
-
-          <h3 className="card__title">{heading}</h3>
-          {location && <p className="card__location">{location}</p>}
-
-          <div className="card__price-row">
-            <span className="card__price">{priceText}</span>
-            {card.pricePerSqm !== null && (
-              <span className="card__psqm">{formatPerSqm(card.pricePerSqm)}</span>
-            )}
-          </div>
-
-          <p className="card__meta">
-            {formatArea(card.areaGross)}
-            {card.floor !== null ? ` · ${t.detail.specs.floor} ${card.floor}` : ''}
-          </p>
-        </div>
-      </Link>
+      {target === null ? (
+        <div className="card__link">{inner}</div>
+      ) : (
+        <Link href={target} className="card__link">
+          {inner}
+        </Link>
+      )}
     </article>
   )
 }

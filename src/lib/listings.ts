@@ -106,6 +106,27 @@ export const getPropertyPage = async (page: number, perPage: number): Promise<Pr
   return { cards: rows.rows.map(toCard), total: Number(count.rows[0]?.total ?? 0) }
 }
 
+/**
+ * Available units for a company, across all of its published projects. Reads
+ * the same `listing_index` read model as every other card surface (rule 4):
+ * unit rows carry `company_id` from their project's developer. Only
+ * `status = 'available'` — the company page advertises what a buyer can still
+ * take (docs/04). Cheapest first, then newest.
+ */
+export const getCompanyUnits = async (companyId: number): Promise<ListingCard[]> => {
+  const pool = await getPool()
+  const { rows } = await pool.query(
+    `SELECT ${CARD_COLUMNS}
+       FROM listing_index
+      WHERE source = 'unit'
+        AND company_id = $1
+        AND status = 'available'
+      ORDER BY price_eur ASC NULLS LAST, published_at DESC NULLS LAST, source_id DESC`,
+    [companyId],
+  )
+  return rows.map(toCard)
+}
+
 /** Distinct published property slugs — feeds generateStaticParams. */
 export const getPropertySlugs = async (): Promise<string[]> => {
   const pool = await getPool()

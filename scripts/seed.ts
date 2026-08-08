@@ -83,6 +83,23 @@ const seed = async () => {
     },
   })
 
+  // Second company with no projects, logo, cover, about or articles: proves the
+  // profile still renders on a bare company and exercises every empty state
+  // (docs/04 — "a company with zero published projects still gets a page").
+  await payload.create({
+    collection: 'companies',
+    data: {
+      name: 'Adria Invest',
+      slug: 'adria-invest',
+      foundedYear: 2019,
+      phone: '+355 69 40 22 108',
+      email: 'kontakt@adriainvest.al',
+      verifiedPartner: false,
+      areasOfOperation: [areaIds['Golem']],
+      _status: 'published',
+    },
+  })
+
   const project = await payload.create({
     collection: 'projects',
     data: {

@@ -38,6 +38,12 @@ export const STATUS_LABELS: Record<string, string> = {
   sold: 'Shitur',
 }
 
+export const PROJECT_PHASE_LABELS: Record<string, string> = {
+  planning: 'Në planifikim',
+  underConstruction: 'Në ndërtim',
+  completed: 'Përfunduar',
+}
+
 export const BUILDING_PHASE_LABELS: Record<string, string> = {
   brick: 'Fazë tulle',
   facade: 'Fazë fasade',
@@ -68,6 +74,33 @@ export const t = {
   brand: 'Atmos',
   nav: {
     properties: 'Prona',
+    companies: 'Kompani',
+  },
+  companies: {
+    title: 'Kompani ndërtimi dhe investitorë',
+    metaTitle: 'Kompani ndërtimi dhe investitorë në Shqipëri',
+    metaDescription:
+      'Profile të verifikuara të kompanive të ndërtimit dhe investitorëve, projektet dhe njësitë e tyre në Atmos.',
+    empty: 'Nuk u gjet asnjë kompani.',
+    resultsOne: 'kompani',
+    resultsMany: 'kompani',
+  },
+  company: {
+    verifiedPartner: 'Partner i verifikuar',
+    contact: 'Kontakt',
+    founded: 'Themeluar',
+    website: 'Uebsajti',
+    phone: 'Telefon',
+    email: 'Email',
+    areasOfOperation: 'Zonat e operimit',
+    activeProjects: 'Projekte aktive',
+    completedProjects: 'Projekte të përfunduara',
+    units: 'Njësi të disponueshme',
+    articles: 'Artikuj',
+    completion: 'Përfundimi',
+    unitsFrom: 'Nga',
+    noProjects: 'Kjo kompani nuk ka ende projekte të publikuara.',
+    noUnits: 'Nuk ka njësi të disponueshme për momentin.',
   },
   list: {
     title: 'Prona në shitje dhe me qira',
