@@ -3,7 +3,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { RichText } from '@payloadcms/richtext-lexical/react'
-import { getProjectDetail } from '@/lib/projects'
+import { Suspense } from 'react'
+import { getProjectDetail, getProjectSlugs } from '@/lib/projects'
 import { getProjectUnits, getProjectRooms } from '@/lib/listings'
 import {
   isLocale,
@@ -23,26 +24,34 @@ import { Badge } from '@/components/Badge'
 import { JsonLd } from '@/components/JsonLd'
 
 /**
- * This route is server-rendered on demand, not prerendered — deliberately, and
- * unlike the unit pages beneath it, which are `generateStaticParams` + ISR.
+ * A static shell with one dynamic hole.
  *
- * The unit table's sort and filter state lives in the query string (docs/06 —
- * no React state, a shareable URL). Reading `searchParams` opts a route out of
- * static generation in Next: not per-request, but wholesale, so adding
- * `generateStaticParams` and `revalidate` here would prerender nothing and only
- * document an intention the build ignores. `next build` reports the route as
- * `ƒ` either way; the difference is whether this file lies about it.
+ * Everything that describes the development — gallery, heading, availability
+ * count, description, site plan, map, developer, and both JSON-LD blocks — is
+ * prerendered, because none of it depends on the request. The unit *table*
+ * does: its sort and filter live in the query string (docs/06 — no React state,
+ * a shareable URL), so it sits behind a <Suspense> boundary and streams in.
  *
- * That matches the line the rest of the site already draws: pure entity pages
- * (/prona/[slug], /kompani/[slug], and each unit) are static + ISR; pages
- * carrying URL-driven query state (/prona, and this one) are dynamic. The
- * crawlable long tail here is the unit pages, and those are prerendered.
+ * `cacheComponents` is what makes that split possible. Without it, reading
+ * `searchParams` anywhere in a route opts the whole route out of static
+ * generation, which is why this page was previously `ƒ` in the route table.
+ * Now the shell is prerendered and only the table is deferred.
  *
- * To make this static too, the table's state would have to leave the query
- * string — or the app would have to turn on `cacheComponents` so a Suspense
- * boundary could hold the dynamic part inside a static shell. Both are bigger
- * decisions than this slice.
+ * Two consequences worth keeping in mind when editing this file:
+ *
+ * 1. The Residence + Offer structured data is built from the UNFILTERED unit
+ *    set in the shell, not from whatever the table is currently showing. A
+ *    crawler must see the whole development, and a page sorted by price must
+ *    not emit different markup than the same page unsorted.
+ * 2. Anything moved out of the Suspense boundary must not touch `searchParams`,
+ *    and anything moved in should still be cheap — it is what the visitor waits
+ *    for after the shell paints.
  */
+
+export async function generateStaticParams() {
+  const slugs = await getProjectSlugs()
+  return slugs.map((slug) => ({ locale: DEFAULT_LOCALE, slug }))
+}
 
 export async function generateMetadata({
   params,
@@ -76,6 +85,55 @@ export async function generateMetadata({
   }
 }
 
+/**
+ * The dynamic hole: the unit table under the visitor's current sort and filter.
+ *
+ * It takes the `searchParams` promise rather than the resolved object, so the
+ * shell above never awaits it and stays prerenderable — awaiting it here, past
+ * the Suspense boundary, is what confines the dynamic part to this subtree.
+ */
+async function FilteredUnitTable({
+  locale,
+  projectId,
+  basePath,
+  showBuilding,
+  searchParams,
+}: {
+  locale: Locale
+  projectId: number
+  basePath: string
+  showBuilding: boolean
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const values = parseUnitParams(locale, await searchParams)
+
+  const [units, roomOptions] = await Promise.all([
+    getProjectUnits(projectId, values),
+    getProjectRooms(projectId),
+  ])
+
+  return (
+    <UnitTable
+      units={units}
+      values={values}
+      roomOptions={roomOptions}
+      locale={locale}
+      basePath={basePath}
+      showBuilding={showBuilding}
+    />
+  )
+}
+
+/** Holds the table's height while it streams, so the shell does not reflow. */
+function UnitTableFallback() {
+  return (
+    <section className="unit-table-block">
+      <h2 className="section__heading">{t.project.units}</h2>
+      <div className="unit-table__loading" aria-hidden="true" />
+    </section>
+  )
+}
+
 export default async function ProjectDetailPage({
   params,
   searchParams,
@@ -91,17 +149,17 @@ export default async function ProjectDetailPage({
 
   const { project, areaName, developer, images, sitePlan, brochureUrl } = detail
 
-  const unitFilters = parseUnitParams(locale, await searchParams)
   const basePath = `/${locale}/projekte/${slug}`
   const url = localeUrl(locale, `/projekte/${slug}`)
 
-  const [units, allUnits, roomOptions] = await Promise.all([
-    getProjectUnits(project.id, unitFilters),
-    // The unfiltered set: structured data and the availability line describe the
-    // development, not the visitor's current view of the table.
-    getProjectUnits(project.id, { status: null, rooms: null, sort: DEFAULT_UNIT_SORT }),
-    getProjectRooms(project.id),
-  ])
+  // The unfiltered set. Structured data and the availability line describe the
+  // development, not the visitor's current view of the table — and being
+  // request-independent is what keeps them in the prerendered shell.
+  const allUnits = await getProjectUnits(project.id, {
+    status: null,
+    rooms: null,
+    sort: DEFAULT_UNIT_SORT,
+  })
 
   const available = allUnits.filter((u) => u.status === 'available').length
   const showBuilding = allUnits.some((u) => u.building)
@@ -154,14 +212,15 @@ export default async function ProjectDetailPage({
           )}
 
           <div className="detail__block">
-            <UnitTable
-              units={units}
-              values={unitFilters}
-              roomOptions={roomOptions}
-              locale={locale}
-              basePath={basePath}
-              showBuilding={showBuilding}
-            />
+            <Suspense fallback={<UnitTableFallback />}>
+              <FilteredUnitTable
+                locale={locale}
+                projectId={project.id}
+                basePath={basePath}
+                showBuilding={showBuilding}
+                searchParams={searchParams}
+              />
+            </Suspense>
           </div>
 
           {sitePlan && (

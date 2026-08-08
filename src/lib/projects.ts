@@ -17,6 +17,7 @@ import config from '@/payload.config'
 import type { Project, ProjectUnit, Company } from '@/payload-types'
 import type { Locale } from '@/messages/sq'
 import type { GalleryImage } from '@/lib/property-detail'
+import { cacheLife } from 'next/cache'
 
 const idOf = (rel: number | { id: number } | null | undefined): number | null => {
   if (rel === null || rel === undefined) return null
@@ -119,6 +120,8 @@ const toListItem = async (
  * index of six cards is furniture with nothing to hold.
  */
 export const getProjectList = async (locale: Locale): Promise<ProjectListItem[]> => {
+  'use cache'
+  cacheLife('content')
   const payload = await getPayload({ config })
   const { docs } = await payload.find({
     collection: 'projects',
@@ -137,6 +140,8 @@ export const getProjectList = async (locale: Locale): Promise<ProjectListItem[]>
 
 /** Published project slugs — feeds generateStaticParams. */
 export const getProjectSlugs = async (): Promise<string[]> => {
+  'use cache'
+  cacheLife('content')
   const payload = await getPayload({ config })
   const { docs } = await payload.find({
     collection: 'projects',
@@ -153,6 +158,8 @@ export const getCompanyProjectCards = async (
   companyId: number,
   locale: Locale,
 ): Promise<{ active: ProjectListItem[]; completed: ProjectListItem[] }> => {
+  'use cache'
+  cacheLife('content')
   const payload = await getPayload({ config })
   const { docs } = await payload.find({
     collection: 'projects',
@@ -202,6 +209,8 @@ export const getProjectDetail = async (
   slug: string,
   locale: Locale,
 ): Promise<ProjectDetail | null> => {
+  'use cache'
+  cacheLife('content')
   const payload = await getPayload({ config })
 
   const { docs } = await payload.find({
@@ -296,6 +305,8 @@ export const getUnitDetail = async (
   unitSlug: string,
   locale: Locale,
 ): Promise<UnitDetail | null> => {
+  'use cache'
+  cacheLife('content')
   const payload = await getPayload({ config })
 
   const parent = await getProjectDetail(projectSlug, locale)

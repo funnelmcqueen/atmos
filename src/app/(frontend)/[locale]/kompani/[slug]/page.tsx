@@ -17,10 +17,11 @@ import { ProjectCard } from '@/components/ProjectCard'
 import { Badge } from '@/components/Badge'
 import { JsonLd } from '@/components/JsonLd'
 
-// Prebuild sq profiles, then serve from cache and revalidate hourly (ISR).
+// Prebuilt sq profiles, served from cache. The one-hour revalidate window now
+// lives on the `content` cache profile the read functions declare, because
+// `cacheComponents` disallows a route-level `revalidate` (see next.config.ts).
 // docs/09 also wants revalidateTag on publish — that hook lands with the
 // approval-workflow slice; time-based revalidation covers this one.
-export const revalidate = 3600
 
 export async function generateStaticParams() {
   const slugs = await getCompanySlugs()

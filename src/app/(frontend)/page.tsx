@@ -1,18 +1,32 @@
 import { headers as getHeaders } from 'next/headers.js'
 import Image from 'next/image'
 import { getPayload } from 'payload'
-import React from 'react'
+import React, { Suspense } from 'react'
 import { fileURLToPath } from 'url'
 
 import config from '@/payload.config'
 import './styles.css'
 
-export default async function HomePage() {
+/**
+ * Still the Payload starter page. The real homepage is deliberately the last
+ * thing built (docs/12-design.md), so this is only kept honest, not designed.
+ *
+ * The greeting is behind <Suspense> because it reads the request's cookies via
+ * `payload.auth` — under cacheComponents that has to be an explicitly deferred
+ * hole, otherwise one authentication check keeps the whole page from
+ * prerendering.
+ */
+async function Greeting() {
   const headers = await getHeaders()
   const payloadConfig = await config
   const payload = await getPayload({ config: payloadConfig })
   const { user } = await payload.auth({ headers })
 
+  return user ? <h1>Welcome back, {user.email}</h1> : <h1>Welcome to your new project.</h1>
+}
+
+export default async function HomePage() {
+  const payloadConfig = await config
   const fileURL = `vscode://file/${fileURLToPath(import.meta.url)}`
 
   return (
@@ -27,8 +41,9 @@ export default async function HomePage() {
             width={65}
           />
         </picture>
-        {!user && <h1>Welcome to your new project.</h1>}
-        {user && <h1>Welcome back, {user.email}</h1>}
+        <Suspense fallback={<h1>Welcome.</h1>}>
+          <Greeting />
+        </Suspense>
         <div className="links">
           <a
             className="admin"

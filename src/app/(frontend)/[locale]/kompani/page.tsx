@@ -3,15 +3,22 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { getCompanyList } from '@/lib/companies'
-import { isLocale, t, DEFAULT_LOCALE, type Locale } from '@/messages/sq'
+import { isLocale, t, DEFAULT_LOCALE, LOCALES, type Locale } from '@/messages/sq'
 import { buildAlternates, breadcrumbLd, localeUrl } from '@/lib/seo'
 import { Badge } from '@/components/Badge'
 import { JsonLd } from '@/components/JsonLd'
 
 const PATH = '/kompani'
 
-// Prebuild the index, then serve from cache and revalidate hourly (ISR).
-export const revalidate = 3600
+// Prebuilt and served from cache; the revalidate window lives on the `content`
+// cache profile in the read functions (see next.config.ts).
+
+// Without this, `[locale]` is request data and awaiting `params` is itself an
+// uncached read, which under cacheComponents fails the prerender rather than
+// quietly falling back to on-demand rendering. The locale list is fixed.
+export async function generateStaticParams() {
+  return LOCALES.map((locale) => ({ locale }))
+}
 
 export async function generateMetadata({
   params,

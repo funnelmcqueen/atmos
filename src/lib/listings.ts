@@ -15,6 +15,7 @@
  */
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { cacheLife } from 'next/cache'
 import type {
   FilterValues,
   SortKey,
@@ -137,6 +138,8 @@ export interface CardThumb {
 export const getCoverThumbnails = async (
   cards: ListingCard[],
 ): Promise<Map<string, CardThumb>> => {
+  'use cache'
+  cacheLife('content')
   const map = new Map<string, CardThumb>()
   const ids = cards.filter((c) => c.source === 'property').map((c) => c.sourceId)
   if (ids.length === 0) return map
@@ -182,6 +185,8 @@ export interface ListingFacets {
  * Rooms are the distinct raw strings ("1+1", "2+1") standalone listings carry.
  */
 export const getListingFacets = async (): Promise<ListingFacets> => {
+  'use cache'
+  cacheLife('content')
   const pool = await getPool()
 
   const [areaRows, roomRows] = await Promise.all([
@@ -361,6 +366,8 @@ export const searchListingsInBounds = async (
  * take (docs/04). Cheapest first, then newest.
  */
 export const getCompanyUnits = async (companyId: number): Promise<ListingCard[]> => {
+  'use cache'
+  cacheLife('content')
   const pool = await getPool()
   const { rows } = await pool.query(
     `SELECT ${CARD_COLUMNS}
@@ -400,6 +407,8 @@ export const getProjectUnits = async (
   projectId: number,
   filters: UnitFilterValues,
 ): Promise<ListingCard[]> => {
+  'use cache'
+  cacheLife('content')
   const pool = await getPool()
 
   const clauses = [`source = 'unit'`, 'project_id = $1']
@@ -437,6 +446,8 @@ export interface ProjectUnitStats {
 export const getProjectUnitStats = async (
   projectIds: number[],
 ): Promise<Map<number, ProjectUnitStats>> => {
+  'use cache'
+  cacheLife('content')
   const stats = new Map<number, ProjectUnitStats>()
   if (projectIds.length === 0) return stats
 
@@ -465,6 +476,8 @@ export const getProjectUnitStats = async (
 /** Distinct room strings among a project's published units — the only values
  *  the unit table's rooms filter offers, so it never lists an empty option. */
 export const getProjectRooms = async (projectId: number): Promise<string[]> => {
+  'use cache'
+  cacheLife('content')
   const pool = await getPool()
   const { rows } = await pool.query(
     `SELECT DISTINCT rooms
@@ -479,6 +492,8 @@ export const getProjectRooms = async (projectId: number): Promise<string[]> => {
 /** Published unit slugs paired with their project slug — feeds the unit route's
  *  generateStaticParams. */
 export const getUnitRoutes = async (): Promise<{ project: string; unit: string }[]> => {
+  'use cache'
+  cacheLife('content')
   const pool = await getPool()
   const { rows } = await pool.query(
     `SELECT project_slug, slug
@@ -491,6 +506,8 @@ export const getUnitRoutes = async (): Promise<{ project: string; unit: string }
 
 /** Distinct published property slugs — feeds generateStaticParams. */
 export const getPropertySlugs = async (): Promise<string[]> => {
+  'use cache'
+  cacheLife('content')
   const pool = await getPool()
   const { rows } = await pool.query(
     `SELECT slug FROM listing_index WHERE source = 'property' ORDER BY slug`,
@@ -509,6 +526,8 @@ export const getSimilarProperties = async (args: {
   priceEur: number | null
   excludeSlug: string
 }): Promise<ListingCard[]> => {
+  'use cache'
+  cacheLife('content')
   const pool = await getPool()
   const { areaId, listingType, priceEur, excludeSlug } = args
 

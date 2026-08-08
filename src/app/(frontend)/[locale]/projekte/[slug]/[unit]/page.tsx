@@ -23,8 +23,8 @@ import { StatusBadge } from '@/components/StatusBadge'
 import { Badge } from '@/components/Badge'
 import { JsonLd } from '@/components/JsonLd'
 
-// Prebuild sq unit pages, then serve from cache and revalidate hourly (ISR).
-export const revalidate = 3600
+// Prebuilt sq unit pages, served from cache; the revalidate window lives on the
+// `content` cache profile in the read functions (see next.config.ts).
 
 export async function generateStaticParams() {
   const routes = await getUnitRoutes()

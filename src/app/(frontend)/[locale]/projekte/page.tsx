@@ -9,11 +9,11 @@ import { JsonLd } from '@/components/JsonLd'
 
 const PATH = '/projekte'
 
-// Prebuilt and revalidated hourly (ISR). Unlike /prona, this index takes no
-// filters and no query params, so there is exactly one version of it per locale
-// and it prerenders. docs/09 also wants revalidateTag on publish — that lands
-// with the approval-workflow slice; time-based revalidation covers this one.
-export const revalidate = 3600
+// Prebuilt and served from cache. Unlike /prona this index takes no filters and
+// no query params, so there is exactly one version of it per locale. The
+// revalidate window lives on the `content` cache profile in the read functions
+// (see next.config.ts). docs/09 also wants revalidateTag on publish — that
+// lands with the approval-workflow slice.
 
 // Without this the dynamic [locale] segment leaves the route server-rendered on
 // demand for want of knowing which locales exist. The list is fixed and short.

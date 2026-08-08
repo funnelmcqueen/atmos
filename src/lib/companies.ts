@@ -17,6 +17,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import type { Company } from '@/payload-types'
 import type { Locale } from '@/messages/sq'
+import { cacheLife } from 'next/cache'
 
 const idOf = (rel: number | { id: number } | null | undefined): number | null => {
   if (rel === null || rel === undefined) return null
@@ -63,6 +64,8 @@ export interface CompanyListItem {
 
 /** Published companies for the /kompani index, alphabetical by name. */
 export const getCompanyList = async (): Promise<CompanyListItem[]> => {
+  'use cache'
+  cacheLife('content')
   const payload = await getPayload({ config })
   const { docs } = await payload.find({
     collection: 'companies',
@@ -87,6 +90,8 @@ export const getCompanyList = async (): Promise<CompanyListItem[]> => {
 
 /** Published company slugs — feeds generateStaticParams. */
 export const getCompanySlugs = async (): Promise<string[]> => {
+  'use cache'
+  cacheLife('content')
   const payload = await getPayload({ config })
   const { docs } = await payload.find({
     collection: 'companies',
@@ -113,6 +118,8 @@ export const getCompanyProfile = async (
   slug: string,
   locale: Locale,
 ): Promise<CompanyProfile | null> => {
+  'use cache'
+  cacheLife('content')
   const payload = await getPayload({ config })
 
   const { docs } = await payload.find({
@@ -165,6 +172,8 @@ export const getCompanyArticles = async (
   companyId: number,
   locale: Locale,
 ): Promise<CompanyArticle[]> => {
+  'use cache'
+  cacheLife('content')
   const payload = await getPayload({ config })
   const { docs } = await payload.find({
     collection: 'articles',

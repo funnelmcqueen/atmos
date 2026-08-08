@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import { searchListings, getListingFacets, getCoverThumbnails } from '@/lib/listings'
-import { isLocale, t, DEFAULT_LOCALE, type Locale } from '@/messages/sq'
+import { isLocale, t, DEFAULT_LOCALE, LOCALES, type Locale } from '@/messages/sq'
 import {
   parseSearchParams,
   parseMapState,
@@ -18,6 +19,26 @@ import { JsonLd } from '@/components/JsonLd'
 
 const PER_PAGE = 12
 const PATH = '/prona'
+
+/**
+ * The results page: a static shell around a dynamic result set.
+ *
+ * Every part of this page that a visitor can change — the filter panel's
+ * current values, the map's viewport, the grid, the pagination — is derived
+ * from `searchParams`, so all of it lives behind one <Suspense> boundary. What
+ * stays in the prerendered shell is the chrome: the heading, the breadcrumb
+ * markup, and the page's own identity.
+ *
+ * The result count moved inside the boundary with the grid. It has to: it is a
+ * property of the query, and rendering "274 prona" in a static shell above a
+ * filtered set of three would be worse than showing it a moment later.
+ */
+
+// The locale list is fixed; without this, awaiting `params` is an uncached read
+// and the shell cannot prerender at all (see next.config.ts on cacheComponents).
+export async function generateStaticParams() {
+  return LOCALES.map((locale) => ({ locale }))
+}
 
 export async function generateMetadata({
   params,
@@ -41,16 +62,14 @@ export async function generateMetadata({
   }
 }
 
-export default async function PropertiesPage({
-  params,
+/** Everything downstream of the query string. */
+async function Results({
+  locale,
   searchParams,
 }: {
-  params: Promise<{ locale: string }>
+  locale: Locale
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const { locale } = await params
-  if (!isLocale(locale)) notFound()
-
   const rawParams = await searchParams
   const filters: FilterValues = parseSearchParams(locale, rawParams)
   const mapState = parseMapState(locale, rawParams)
@@ -70,22 +89,11 @@ export default async function PropertiesPage({
   // Filter params (localized, no page) that every pagination link re-appends.
   const filterQuery = toSearchParams(locale, filters).toString()
 
-  const breadcrumb = breadcrumbLd([
-    { name: t.brand, url: localeUrl(locale, '') },
-    { name: t.nav.properties, url: localeUrl(locale, PATH) },
-  ])
-
   return (
-    <main className="container">
-      <JsonLd data={breadcrumb} />
-
-      <div className="page-head">
-        <p className="page-head__eyebrow">{t.nav.properties}</p>
-        <h1 className="page-head__title">{t.list.title}</h1>
-        <p className="page-head__count">
-          {total} {total === 1 ? t.list.resultsOne : t.list.resultsMany}
-        </p>
-      </div>
+    <>
+      <p className="page-head__count">
+        {total} {total === 1 ? t.list.resultsOne : t.list.resultsMany}
+      </p>
 
       <FilterPanel locale={locale} values={filters} facets={facets} />
 
@@ -122,6 +130,42 @@ export default async function PropertiesPage({
         totalPages={totalPages}
         query={filterQuery}
       />
+    </>
+  )
+}
+
+/** Holds the page's shape while the result set streams in. */
+function ResultsFallback() {
+  return <div className="results-loading" aria-hidden="true" />
+}
+
+export default async function PropertiesPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const { locale } = await params
+  if (!isLocale(locale)) notFound()
+
+  const breadcrumb = breadcrumbLd([
+    { name: t.brand, url: localeUrl(locale, '') },
+    { name: t.nav.properties, url: localeUrl(locale, PATH) },
+  ])
+
+  return (
+    <main className="container">
+      <JsonLd data={breadcrumb} />
+
+      <div className="page-head">
+        <p className="page-head__eyebrow">{t.nav.properties}</p>
+        <h1 className="page-head__title">{t.list.title}</h1>
+      </div>
+
+      <Suspense fallback={<ResultsFallback />}>
+        <Results locale={locale} searchParams={searchParams} />
+      </Suspense>
     </main>
   )
 }

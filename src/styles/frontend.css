@@ -840,6 +840,21 @@
 /* The table scrolls inside its own box rather than pushing the page sideways.
    Seven columns of real data do not fit a phone, and dropping columns to make
    them fit would remove exactly the numbers people came to compare. */
+/* Reserves room for the result set while it streams in behind the static shell,
+   so the page does not collapse to the header and then jump. */
+.results-loading {
+  min-height: 70vh;
+}
+
+/* Reserves the table's approximate height while it streams in, so the static
+   shell around it does not jump when the rows arrive. */
+.unit-table__loading {
+  height: 320px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
 .unit-table__scroll {
   overflow-x: auto;
   border: 1px solid var(--line);

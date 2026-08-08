@@ -85,8 +85,17 @@ test.describe('Projects', () => {
     const href = await link.getAttribute('href')
     expect(href).toMatch(/^\/sq\/projekte\/orbital-3-residence\/[a-z0-9-]+$/)
 
+    // Clicking it navigates to that unit.
     await link.click()
     await page.waitForURL(/\/sq\/projekte\/orbital-3-residence\/.+/)
+    expect(new URL(page.url()).pathname).toBe(href)
+
+    // Assert the destination's content on a clean load rather than mid-soft-
+    // navigation. React keeps the previous tree mounted until the next route is
+    // ready to commit, and in dev "ready" includes compiling the route on
+    // demand — so both pages' <h1>s coexist for as long as that takes. That is
+    // dev-server timing, not behaviour worth asserting on.
+    await page.goto(`${BASE}${href}`)
 
     // The unit's own title is the h1, and the page names its parent project.
     await expect(page.locator('h1')).toBeVisible()

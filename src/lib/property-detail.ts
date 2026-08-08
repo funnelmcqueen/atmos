@@ -17,6 +17,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import type { Property } from '@/payload-types'
 import type { Locale } from '@/messages/sq'
+import { cacheLife } from 'next/cache'
 
 export interface PublicAgent {
   name: string
@@ -47,6 +48,8 @@ export const getPropertyDetail = async (
   slug: string,
   locale: Locale,
 ): Promise<PropertyDetail | null> => {
+  'use cache'
+  cacheLife('content')
   const payload = await getPayload({ config })
 
   const { docs } = await payload.find({
