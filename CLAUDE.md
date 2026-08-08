@@ -64,6 +64,9 @@ No Redux, no state library — server components and URL search params carry sta
 9. **Every public route is `/[locale]/...`** with `sq` as default. A locale
    switch must keep the user on the same entity. See `docs/07-i18n.md`.
 
+10. **All visual work follows `docs/12-design.md`.** Read it before
+    building any component or page.
+
 ## Definition of done
 
 A task is not finished until all of these pass:
