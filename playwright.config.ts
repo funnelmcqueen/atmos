@@ -51,5 +51,16 @@ export default defineConfig({
     command: 'pnpm dev',
     reuseExistingServer: true,
     url: 'http://localhost:3000',
+    env: {
+      ...process.env,
+      // The forms slice sends notification email on submit. Stub the transport
+      // so a suite run never reaches Resend — checked before RESEND_API_KEY in
+      // lib/email.ts, so a real key in .env is still stubbed here.
+      //
+      // Only applies to a server Playwright starts. With `reuseExistingServer`
+      // and a dev server already up, that server's environment wins — so if you
+      // are running `pnpm dev` in another terminal, set this there too.
+      ATMOS_EMAIL_TRANSPORT: 'stub',
+    },
   },
 })

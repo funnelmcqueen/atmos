@@ -68,6 +68,11 @@ export const EXPECTED_ROUTE_MODES: Record<string, RouteMode> = {
   '/[locale]/kompani': 'ppr',
   '/[locale]/kompani/[slug]': 'ppr',
 
+  // Static heading and intro; the form itself streams, because its signed
+  // anti-spam token must be minted per request rather than baked into a
+  // prerender (see EnquiryFormSlot and docs/05).
+  '/[locale]/dergo-pronen': 'ppr',
+
   // --- Route handlers and framework routes ---------------------------------
   // Dynamic on purpose. Each one either answers a per-request query or is owned
   // by Payload.

@@ -31,6 +31,11 @@ export default async function LocaleLayout({
           <Link href={`/${locale}/prona`}>{t.nav.properties}</Link>
           <Link href={`/${locale}/projekte`}>{t.nav.projects}</Link>
           <Link href={`/${locale}/kompani`}>{t.nav.companies}</Link>
+          {/* The owner-facing action, visually distinct from the browse links —
+              it is the site's other audience and its other conversion. */}
+          <Link className="site-header__cta" href={`/${locale}/dergo-pronen`}>
+            {t.listingRequest.title}
+          </Link>
         </nav>
       </header>
       {children}

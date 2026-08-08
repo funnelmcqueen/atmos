@@ -35,6 +35,27 @@ export const Projects: CollectionConfig = {
     { name: 'area', type: 'relationship', relationTo: 'areas', required: true, index: true },
     { name: 'location', type: 'point', required: true },
 
+    /**
+     * The agent who owns this development's leads.
+     *
+     * A project is one developer relationship and in practice one person
+     * handles it, so enquiries on the project page and on every unit beneath it
+     * route here (docs/05). Units deliberately have no agent of their own —
+     * they inherit this one, the same way they inherit area, location and
+     * developer (docs/03). Unset falls back to the shared inbox, which is a
+     * triage queue, not a destination: leads sitting in a shared inbox get lost.
+     */
+    {
+      name: 'agent',
+      type: 'relationship',
+      relationTo: 'users',
+      filterOptions: { role: { in: ['agent', 'admin'] } },
+      admin: {
+        position: 'sidebar',
+        description: 'Receives enquiries for this project and all of its units.',
+      },
+    },
+
     {
       type: 'row',
       fields: [

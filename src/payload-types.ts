@@ -453,6 +453,10 @@ export interface ListingRequest {
   termsVersion: string;
   termsAcceptedAt: string;
   submittedLocale?: string | null;
+  /**
+   * Salted hash, for rate limiting.
+   */
+  ipHash?: string | null;
   assignedAgent?: (number | null) | User;
   internalNotes?: string | null;
   rejectionReason?: string | null;
@@ -616,6 +620,10 @@ export interface Project {
    * @maxItems 2
    */
   location: [number, number];
+  /**
+   * Receives enquiries for this project and all of its units.
+   */
+  agent?: (number | null) | User;
   constructionPhase: 'planning' | 'underConstruction' | 'completed';
   completionDate?: string | null;
   gallery?:
@@ -801,8 +809,16 @@ export interface Enquiry {
   sourceTitle?: string | null;
   locale?: string | null;
   handled?: boolean | null;
+  /**
+   * Resolved on submit from the listing or project. Empty means it went to the shared inbox.
+   */
   assignedAgent?: (number | null) | User;
   termsVersion?: string | null;
+  termsAcceptedAt?: string | null;
+  /**
+   * Salted hash, for rate limiting.
+   */
+  ipHash?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1037,6 +1053,7 @@ export interface ProjectsSelect<T extends boolean = true> {
   developer?: T;
   area?: T;
   location?: T;
+  agent?: T;
   constructionPhase?: T;
   completionDate?: T;
   gallery?:
@@ -1198,6 +1215,7 @@ export interface ListingRequestsSelect<T extends boolean = true> {
   termsVersion?: T;
   termsAcceptedAt?: T;
   submittedLocale?: T;
+  ipHash?: T;
   assignedAgent?: T;
   internalNotes?: T;
   rejectionReason?: T;
@@ -1221,6 +1239,8 @@ export interface EnquiriesSelect<T extends boolean = true> {
   handled?: T;
   assignedAgent?: T;
   termsVersion?: T;
+  termsAcceptedAt?: T;
+  ipHash?: T;
   updatedAt?: T;
   createdAt?: T;
 }

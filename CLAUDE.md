@@ -111,9 +111,14 @@ against. Never build a page that only works with placeholder content.
 
 Out of scope for v1. If a task asks for these, flag it and stop:
 
-daily rentals and booking, Atmos Match, saved searches, notification emails,
+daily rentals and booking, Atmos Match, saved searches, **alert** emails,
 property comparison, mortgage calculators, virtual tours, market data reports,
 the Italian locale.
+
+"Alert emails" means saved-search and new-listing notifications to clients,
+which depend on Match. Transactional staff notifications — the enquiry and
+listing-request emails in `docs/05` — are v1 and are built. This line used to
+say "notification emails", which read as forbidding both.
 
 `docs/10-roadmap.md` has the reasoning.
 

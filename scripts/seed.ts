@@ -100,9 +100,47 @@ const seed = async () => {
     },
   })
 
+  // Properties require an owning agent, and so now do projects — enquiries on a
+  // project or any of its units route to this person (docs/05). Created before
+  // the projects so it can be assigned to them.
+  const agentEmail = 'seed-agent@atmos.al'
+  const existingAgent = await payload.find({
+    collection: 'users',
+    where: { email: { equals: agentEmail } },
+    limit: 1,
+    depth: 0,
+  })
+  // The sticky contact bar and the agent card are both built from the agent's
+  // phone (docs/12 — the bar is where the leads come from). An agent with no
+  // phone is not a real case here, and seeding one silently hides the bar.
+  const agentPhone = '+355 69 20 11 555'
+
+  // Upsert, not find-or-create. The seed deliberately leaves users alone, so a
+  // seed-agent left over from an earlier run survives — and would keep whatever
+  // fields it had when it was made. Re-seeding has to converge on a known
+  // state for the fields the fixtures depend on, or a page renders differently
+  // on a fresh database than on a re-seeded one.
+  const agent = existingAgent.docs[0]
+    ? await payload.update({
+        collection: 'users',
+        id: existingAgent.docs[0].id,
+        data: { name: 'Seed Agent', phone: agentPhone, role: 'agent' },
+      })
+    : await payload.create({
+        collection: 'users',
+        data: {
+          name: 'Seed Agent',
+          email: agentEmail,
+          phone: agentPhone,
+          password: 'seed-agent-pw',
+          role: 'agent',
+        },
+      })
+
   const project = await payload.create({
     collection: 'projects',
     data: {
+      agent: agent.id,
       name: 'Orbital 3 Residence',
       slug: 'orbital-3-residence',
       tagline: 'Rezidencë moderne në Bulevardin e Ri',
@@ -124,6 +162,8 @@ const seed = async () => {
   const completedProject = await payload.create({
     collection: 'projects',
     data: {
+      // Deliberately left without an agent: proves the shared-inbox fallback
+      // and the "nuk ka agjent të caktuar" line in the notification email.
       name: 'Laprakë Garden',
       slug: 'laprake-garden',
       tagline: 'Banesa të përfunduara pranë Rrugës Dritan Hoxha',
@@ -247,29 +287,10 @@ const seed = async () => {
     { title: 'Apartament 2+1 me qira, afër Stacionit të Trenit', type: 'apartment', area: 'Qendra', street: 'Rruga Panorama', rooms: '2+1', gross: 90, price: 700, currency: 'EUR', listing: 'rent', status: 'available', floor: 12, mortgage: false, phase: 'finished' },
   ] as const
 
-  // Properties require an owning agent (access.updateOwnListing). The seed
-  // leaves existing users alone, so find-or-create a dedicated agent to assign
-  // every seeded listing to. The `agent` beforeChange hook only fills this from
-  // req.user, which the Local API has none of here.
-  const agentEmail = 'seed-agent@atmos.al'
-  const existingAgent = await payload.find({
-    collection: 'users',
-    where: { email: { equals: agentEmail } },
-    limit: 1,
-    depth: 0,
-  })
-  const agent =
-    existingAgent.docs[0] ??
-    (await payload.create({
-      collection: 'users',
-      data: {
-        name: 'Seed Agent',
-        email: agentEmail,
-        password: 'seed-agent-pw',
-        role: 'agent',
-      },
-    }))
-
+  // `agent` is created above, before the projects, because they need it too.
+  // Properties require an owning agent (access.updateOwnListing); the `agent`
+  // beforeChange hook only fills it from req.user, which the Local API has none
+  // of here.
   let counter = 1
   for (const p of properties) {
     await payload.create({

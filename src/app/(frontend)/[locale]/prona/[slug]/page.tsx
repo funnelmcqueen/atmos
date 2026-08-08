@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 import { getPropertyDetail } from '@/lib/property-detail'
@@ -13,6 +14,7 @@ import { AgentCard } from '@/components/AgentCard'
 import { ContactBar } from '@/components/ContactBar'
 import { LocationPanel } from '@/components/LocationPanel'
 import { PropertyCard } from '@/components/PropertyCard'
+import { EnquiryFormSlot, EnquiryFormFallback } from '@/components/EnquiryFormSlot'
 import { StatusBadge } from '@/components/StatusBadge'
 import { Badge } from '@/components/Badge'
 import { JsonLd } from '@/components/JsonLd'
@@ -193,6 +195,14 @@ export default async function PropertyDetailPage({
 
           <div className="detail__block">
             <FeatureGrid features={property.features ?? []} />
+          </div>
+
+          {/* The enquiry form, per docs/05. Behind Suspense because its signed
+              token must be minted per request — see EnquiryFormSlot. */}
+          <div className="detail__block">
+            <Suspense fallback={<EnquiryFormFallback />}>
+              <EnquiryFormSlot sourceType="property" sourceId={property.id} locale={locale} />
+            </Suspense>
           </div>
 
           <div className="detail__block">

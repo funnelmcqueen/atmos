@@ -49,6 +49,17 @@
 
 ---
 
+## Forms and email slice — 9 Aug 2026
+
+- **Built:** The two public write operations (docs/05), end to end. `EnquiryForm` on the property, unit and project detail pages, storing `sourceType`, `sourceId`, `locale`, the resolved agent, and the consent record; `/[locale]/dergo-pronen` with every docs/05 field, photo upload up to 15, and the documentation + terms checkboxes. Both confirm **in place** via `useActionState` — no redirect, because sending someone to a thank-you page loses the listing they were reading and the way back is a re-submitting back button. Anti-spam: honeypot, a **signed** render-time token behind the 3-second timing check, and a rate limit by hashed IP (5 enquiries/hour, 3 requests/day) counted off existing rows — no Redis, no new service, works across serverless instances where an in-memory Map would not. Resend + React Email templates (`EnquiryNotification`, `ListingRequestNotification`) go to the routed agent with admin in bcc. `ContactBar` gains the form as a **third** option beside call and WhatsApp, and the project page gets a contact bar it never had.
+- **Decided:** `create` is now **closed** on `enquiries` and `listing-requests` — both were `anyone`, so `/api/enquiries` was publicly writable and every anti-spam control could be skipped by posting JSON straight past the form. The server actions are the only way in and create with `overrideAccess`. `media.create` stays staff-only for the same reason; anonymous photo uploads happen inside the action or not at all. Projects gained an `agent` field: enquiries on a project and on **every unit beneath it** route to that person, units inheriting the agent as they already inherit area, location and developer (docs/03). Unassigned falls through to a shared inbox, flagged in the email and left null in the admin so it reads as triage rather than a destination. Email failure never fails a submission — the row is committed first and a failed send is logged, because telling someone "try again" after we already stored their lead just duplicates it.
+- **Broke:** Three worth remembering. (1) **Payload ended up in the client bundle.** The form components imported `HONEYPOT_FIELD` from `lib/anti-spam.ts`, which imports Payload for its rate-limit query — the build failed deep inside `payload/dist/...` compiled for the browser, naming nothing near the actual import. Constants moved to `lib/form-constants.ts`, which imports nothing. The same file also fixed a second latent bug: a `'use server'` module may only export async functions, and the action was exporting `MAX_PHOTOS`. (2) **A signed token minted in a prerendered page is baked in at build time** — every visitor would have shared one timestamp, and once it aged past the token ceiling the timing check would have rejected every submission on the site, looking like "the form is broken" and pointing nowhere near the cache. `EnquiryFormSlot` calls `connection()` inside a Suspense boundary so the token is per-request while the page stays prerendered. (3) **The seed found-or-created its agent**, so adding a phone to the create branch did nothing on any database that had already been seeded — the contact bar silently had nothing to call. The seed now upserts the fields fixtures depend on.
+- **Known limit:** Photos post through the Server Action, with `serverActions.bodySizeLimit` raised to 25mb. Fifteen photos off a modern phone **will** exceed that sometimes. A request over the limit is rejected by the framework *before* the action runs, so the server cannot return a useful error — which is why the form measures the total on selection and blocks with a real message naming the problem, and why the action re-checks the same ceiling. The proper fix is uploading direct to Vercel Blob and posting only the media ids; that removes the limit entirely and should happen before launch if the client's photo sets are large.
+- **Verified:** `typecheck`, `lint` (0 errors), `check:routes` (16 routes), `test:e2e` **45/45** — twelve new specs covering submit-creates-the-record, honeypot rejected with nothing stored, missing terms blocked, sub-3s rejected, unit routing to the project agent, unassigned falling back to the inbox, and the terms box never pre-ticked on either form.
+- **Next:** Blog (step 8, skipped to get here), `next-intl` for the `en` locale, sitemaps, and `revalidateTag` on publish.
+
+---
+
 # Known quirks
 
 Things that look like bugs, are not, and cost someone an hour already. Add to
@@ -98,3 +109,17 @@ it owns, and media attachments go with them.
 `src/lib/listings.ts` is CRLF; most files written since are LF. Any regex-based
 codemod over the repo needs `\r?\n`, or it silently matches nothing in some files
 and corrupts others.
+
+## `'use cache'` data survives a re-seed
+
+Re-seeding changes the database but not the cache. Pages read through
+`'use cache'` keep serving the previous rows for the profile's revalidate window
+(an hour), and the entries live in `.next/cache`, so restarting the dev server
+does not clear them either. A test that fails right after `pnpm seed` while the
+page looks correct in the database is usually this.
+
+    rm -rf .next/cache
+
+Worth trying before debugging the test. Note it is not always the answer — the
+same symptom came from a seed bug once in the same session (see the forms slice
+entry), so confirm what is actually in the database first.

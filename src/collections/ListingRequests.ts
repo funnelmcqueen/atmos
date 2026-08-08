@@ -1,10 +1,17 @@
 import type { CollectionConfig } from 'payload'
-import { anyone, isAdmin, isStaff } from '../access'
+import { isAdmin, isStaff } from '../access'
 
 /**
  * Owner submissions. Never public, no public route, no drafts.
  * An agent reads this and creates the Property by hand — the manual step is
  * the product. See docs/05-listing-requests.md.
+ *
+ * `create` is **closed**, like Enquiries. The public form at
+ * /[locale]/dergo-pronen posts to `src/app/actions/listing-request.ts`, which
+ * runs the honeypot, signed timing, rate-limit and terms checks before creating
+ * the row with `overrideAccess`. A writable `/api/listing-requests` would let a
+ * bot skip all of it — and this collection accepts photo uploads, so an open
+ * endpoint is worth even less here than elsewhere.
  */
 export const ListingRequests: CollectionConfig = {
   slug: 'listing-requests',
@@ -15,7 +22,7 @@ export const ListingRequests: CollectionConfig = {
     group: 'Inbox',
   },
   access: {
-    create: anyone,
+    create: () => false, // server action only — see the note above
     read: isStaff,
     update: isStaff,
     delete: isAdmin,
@@ -95,6 +102,15 @@ export const ListingRequests: CollectionConfig = {
     { name: 'termsVersion', type: 'text', required: true, admin: { readOnly: true } },
     { name: 'termsAcceptedAt', type: 'date', required: true, admin: { readOnly: true } },
     { name: 'submittedLocale', type: 'text', admin: { readOnly: true } },
+
+    // Salted hash of the submitter's IP — rate limiting and abuse triage
+    // without keeping raw addresses. Same field as on Enquiries.
+    {
+      name: 'ipHash',
+      type: 'text',
+      index: true,
+      admin: { readOnly: true, position: 'sidebar', description: 'Salted hash, for rate limiting.' },
+    },
 
     {
       name: 'assignedAgent',

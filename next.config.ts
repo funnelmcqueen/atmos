@@ -27,6 +27,20 @@ const nextConfig: NextConfig = {
     content: { stale: 300, revalidate: 3600, expire: 31536000 },
   },
 
+  experimental: {
+    serverActions: {
+      // The owner submission form accepts up to 15 photos (docs/05) and the
+      // default body limit is 1 MB, which a couple of phone photos exceed. A
+      // request over this limit is rejected before the action runs, so the
+      // action cannot return a friendly error — which is why the form measures
+      // the total on selection and blocks with a real message first.
+      //
+      // The proper fix is uploading straight to Vercel Blob and posting only
+      // the ids; noted as a known limit in docs/progress.md.
+      bodySizeLimit: '25mb',
+    },
+  },
+
   // PRE-LAUNCH: keep the whole site out of Google. Covers every route — pages,
   // /admin, API — regardless of per-page metadata, and overrides nothing at
   // launch. TO GO LIVE: delete this one `headers()` block; the per-page robots

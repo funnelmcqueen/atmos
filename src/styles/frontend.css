@@ -987,6 +987,201 @@
   margin: var(--space-1) 0 0;
 }
 
+/* --- Forms ---------------------------------------------------------------- */
+.container--narrow {
+  max-width: 720px;
+}
+.page-head__intro {
+  color: var(--muted);
+  margin: var(--space-3) 0 0;
+  max-width: 60ch;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.form--wide {
+  gap: var(--space-5);
+}
+.form__section {
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+}
+.form__legend {
+  color: var(--muted);
+  font-size: var(--step--1);
+  letter-spacing: var(--tracking-label);
+  margin-bottom: var(--space-2);
+  padding: 0;
+  text-transform: uppercase;
+}
+.form__row {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 1fr 1fr;
+}
+.form__row--three {
+  grid-template-columns: repeat(3, 1fr);
+}
+@media (max-width: 700px) {
+  .form__row,
+  .form__row--three {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.form-field__label {
+  font-size: var(--step--1);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.form-field__optional {
+  text-transform: none;
+  letter-spacing: 0;
+}
+.form__control {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--text);
+  font: inherit;
+  /* 44px minimum tap target — agents and owners fill this on a phone
+     (docs/12-design.md). */
+  min-height: 44px;
+  padding: var(--space-2);
+  width: 100%;
+}
+.form__control:focus-visible {
+  border-color: var(--accent);
+}
+textarea.form__control {
+  min-height: 7rem;
+  resize: vertical;
+}
+.form__control--file {
+  padding: var(--space-2);
+}
+.form-field--invalid .form__control {
+  border-color: var(--status-sold);
+}
+.form-field__hint,
+.form__note {
+  color: var(--muted);
+  font-size: var(--step--1);
+  margin: 0;
+}
+.form-field__error,
+.form__error {
+  color: var(--status-sold);
+  font-size: var(--step--1);
+  margin: 0;
+}
+.form__error {
+  background: var(--surface);
+  border: 1px solid var(--status-sold);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
+}
+
+.form-check {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--space-2);
+}
+.form-check__input {
+  /* Big enough to hit on a phone; the label is also clickable. */
+  height: 22px;
+  margin-top: 2px;
+  width: 22px;
+  flex: 0 0 auto;
+  accent-color: var(--accent);
+}
+.form-check__label {
+  font-size: var(--step-0);
+  line-height: 1.4;
+}
+.form-check--invalid .form-check__input {
+  outline: 2px solid var(--status-sold);
+  outline-offset: 2px;
+}
+
+.form__submit {
+  align-self: flex-start;
+  min-height: 48px;
+  padding-inline: var(--space-5);
+}
+.form__submit[disabled] {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* The honeypot. Removed from the accessibility tree and from view, without
+   `display:none` — some bots skip hidden inputs, and this one should look
+   fillable to anything reading the DOM rather than the layout. */
+.form__honeypot {
+  height: 0;
+  left: -9999px;
+  overflow: hidden;
+  position: absolute;
+  width: 0;
+}
+
+.form-loading {
+  min-height: 60vh;
+}
+
+/* --- Enquiry form + confirmation ------------------------------------------ */
+.enquiry {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  /* The sticky contact bar jumps here; keep the heading clear of the header. */
+  scroll-margin-top: calc(var(--header-height) + var(--space-3));
+}
+.enquiry--loading {
+  min-height: 30rem;
+}
+.enquiry__intro {
+  color: var(--muted);
+  margin: 0 0 var(--space-3);
+}
+.enquiry__success,
+.form-success {
+  padding: var(--space-4) 0;
+}
+.enquiry__success p,
+.form-success p {
+  color: var(--muted);
+  margin: var(--space-2) 0 0;
+}
+.form-success {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+}
+
+/* Header CTA: the owner-facing action, marked out from the browse links. */
+.site-header__cta {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--space-1) var(--space-3);
+}
+
 /* --- Not found / empty ---------------------------------------------------- */
 .empty {
   padding: var(--space-6) 0;

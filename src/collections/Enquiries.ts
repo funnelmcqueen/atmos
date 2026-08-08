@@ -1,6 +1,17 @@
 import type { CollectionConfig } from 'payload'
-import { anyone, isAdmin, isStaff } from '../access'
+import { isAdmin, isStaff } from '../access'
 
+/**
+ * Enquiries from a listing or project detail page (docs/05).
+ *
+ * `create` is **closed**, deliberately. This is a public form, but the public
+ * does not post here directly — `src/app/actions/enquiry.ts` validates the
+ * honeypot, the signed timing token, the rate limit and the terms acceptance,
+ * then creates the row with `overrideAccess`. Leaving `create: anyone` would
+ * publish a writable `/api/enquiries` endpoint that skips every one of those
+ * checks, which makes the anti-spam work decorative. If you need another way in,
+ * add another server action — do not reopen this.
+ */
 export const Enquiries: CollectionConfig = {
   slug: 'enquiries',
   admin: {
@@ -8,7 +19,7 @@ export const Enquiries: CollectionConfig = {
     defaultColumns: ['name', 'phone', 'sourceType', 'handled', 'createdAt'],
     group: 'Inbox',
   },
-  access: { create: anyone, read: isStaff, update: isStaff, delete: isAdmin },
+  access: { create: () => false, read: isStaff, update: isStaff, delete: isAdmin },
   fields: [
     { name: 'name', type: 'text', required: true },
     { name: 'phone', type: 'text', required: true },
@@ -28,15 +39,36 @@ export const Enquiries: CollectionConfig = {
       name: 'assignedAgent',
       type: 'relationship',
       relationTo: 'users',
-      admin: { position: 'sidebar' },
+      filterOptions: { role: { in: ['agent', 'admin'] } },
+      admin: {
+        position: 'sidebar',
+        description: 'Resolved on submit from the listing or project. Empty means it went to the shared inbox.',
+      },
     },
+
+    // Consent record — §20 of the vision doc, docs/05. Version *and* timestamp,
+    // both set server-side from the submission, never from the client.
     { name: 'termsVersion', type: 'text', admin: { readOnly: true } },
+    { name: 'termsAcceptedAt', type: 'date', admin: { readOnly: true } },
+
+    // Salted hash of the submitter's IP. Never the raw address: this exists to
+    // rate-limit and to spot an abusive source, and a one-way hash does both
+    // without the site keeping a log of who looked at what.
+    {
+      name: 'ipHash',
+      type: 'text',
+      index: true,
+      admin: { readOnly: true, position: 'sidebar', description: 'Salted hash, for rate limiting.' },
+    },
   ],
   hooks: {
     afterChange: [
       async ({ operation, doc, req }) => {
         if (operation !== 'create') return
-        // Notify the assigned agent via Resend. Implement in src/lib/email.ts.
+        // The notification email is sent by the server action, after the create
+        // commits — not here. An afterChange hook runs inside the transaction,
+        // so a slow or failing Resend call would hold a lead open or roll back
+        // one already accepted. This is a log line, nothing more.
         req.payload.logger.info(`New enquiry ${doc.id} on ${doc.sourceType} ${doc.sourceId}`)
       },
     ],

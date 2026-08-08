@@ -20,6 +20,8 @@ import { PropertyGallery } from '@/components/PropertyGallery'
 import { PropertySpecs } from '@/components/PropertySpecs'
 import { LocationPanel } from '@/components/LocationPanel'
 import { UnitTable } from '@/components/UnitTable'
+import { EnquiryFormSlot, EnquiryFormFallback } from '@/components/EnquiryFormSlot'
+import { ContactBar } from '@/components/ContactBar'
 import { Badge } from '@/components/Badge'
 import { JsonLd } from '@/components/JsonLd'
 
@@ -246,6 +248,13 @@ export default async function ProjectDetailPage({
               tone="project"
             />
           </div>
+
+          {/* Enquiries here route to the project's agent (docs/05). */}
+          <div className="detail__block">
+            <Suspense fallback={<EnquiryFormFallback />}>
+              <EnquiryFormSlot sourceType="project" sourceId={project.id} locale={locale} />
+            </Suspense>
+          </div>
         </div>
 
         <aside className="detail__aside">
@@ -320,6 +329,11 @@ export default async function ProjectDetailPage({
           </p>
         </aside>
       </div>
+
+      {/* The project page had no sticky bar before this slice — the developer's
+          phone was desktop-aside only. Same three thumb-height options as a
+          listing (docs/12). */}
+      <ContactBar phone={developer?.phone ?? null} />
     </main>
   )
 }

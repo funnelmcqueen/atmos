@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
@@ -18,6 +19,7 @@ import { PropertyGallery } from '@/components/PropertyGallery'
 import { PropertySpecs } from '@/components/PropertySpecs'
 import { FeatureGrid } from '@/components/FeatureGrid'
 import { LocationPanel } from '@/components/LocationPanel'
+import { EnquiryFormSlot, EnquiryFormFallback } from '@/components/EnquiryFormSlot'
 import { ContactBar } from '@/components/ContactBar'
 import { StatusBadge } from '@/components/StatusBadge'
 import { Badge } from '@/components/Badge'
@@ -187,6 +189,14 @@ export default async function UnitDetailPage({ params }: { params: Promise<Route
 
           <div className="detail__block">
             <FeatureGrid features={u.features ?? []} />
+          </div>
+
+          {/* Enquiries on a unit route to its project's agent (docs/05) — the
+              unit carries no agent of its own, it inherits one. */}
+          <div className="detail__block">
+            <Suspense fallback={<EnquiryFormFallback />}>
+              <EnquiryFormSlot sourceType="unit" sourceId={u.id} locale={locale} />
+            </Suspense>
           </div>
 
           <div className="detail__block">
