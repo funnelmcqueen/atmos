@@ -34,4 +34,44 @@ test.describe('Properties', () => {
     const res = await page.goto(`${BASE}/sq/prona/draft-property-test`)
     expect(res?.status()).toBe(404)
   })
+
+  /**
+   * The two photo states of the card, both from real data (docs/12-design.md).
+   *
+   * `scripts/attach-photos.ts` gives seven seeded properties a real gallery and
+   * deliberately leaves the Golem land plot without one — land with no
+   * photography is a case the client's inventory actually has. So the listing
+   * grid renders both branches, and a missing photo must read as a marked
+   * placeholder rather than a broken image.
+   */
+  test('listings with photos render an image, land without renders the placeholder', async ({
+    page,
+  }) => {
+    await page.goto(`${BASE}/sq/prona`)
+
+    // At least one card carries a real cover photo...
+    const images = page.locator('.card__img')
+    expect(await images.count()).toBeGreaterThan(0)
+
+    // ...and it actually loads. Asserting the <img> exists would pass even if
+    // the media route or the Blob object were broken; naturalWidth only becomes
+    // non-zero once the bytes have decoded.
+    const firstImage = images.first()
+    await expect(firstImage).toBeVisible()
+    await expect
+      .poll(() => firstImage.evaluate((img: HTMLImageElement) => img.naturalWidth))
+      .toBeGreaterThan(0)
+  })
+
+  test('the land listing shows the marked no-photo placeholder', async ({ page }) => {
+    // Exactly one land listing in the seed, and it is the photo-less one.
+    await page.goto(`${BASE}/sq/prona?tipi=land`)
+
+    await expect(page.locator('.card')).toHaveCount(1)
+    await expect(page.locator('.card__title')).toContainText('Truall')
+
+    // Marked placeholder, no image — not an empty box (docs/12-design.md).
+    await expect(page.locator('.card__placeholder')).toHaveText('Pa foto')
+    await expect(page.locator('.card__img')).toHaveCount(0)
+  })
 })
