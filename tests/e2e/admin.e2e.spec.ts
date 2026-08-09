@@ -39,17 +39,19 @@ test.describe('Admin Panel', () => {
     await cleanupTestUser()
   })
 
+  // The panel is Albanian-only, so these assert Albanian chrome — see
+  // src/i18n/sq.ts and the collection `labels` in src/collections.
   test('can navigate to dashboard', async () => {
     await page.goto('http://localhost:3000/admin')
     await expect(page).toHaveURL('http://localhost:3000/admin')
-    const dashboardArtifact = page.locator('span[title="Dashboard"]').first()
+    const dashboardArtifact = page.locator('span[title="Faqja kryesore"]').first()
     await expect(dashboardArtifact).toBeVisible()
   })
 
   test('can navigate to list view', async () => {
     await page.goto('http://localhost:3000/admin/collections/users')
     await expect(page).toHaveURL('http://localhost:3000/admin/collections/users')
-    const listViewArtifact = page.locator('h1', { hasText: 'Users' }).first()
+    const listViewArtifact = page.locator('h1', { hasText: 'Përdoruesit' }).first()
     await expect(listViewArtifact).toBeVisible()
   })
 

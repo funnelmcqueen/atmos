@@ -1,14 +1,16 @@
 import type { CollectionConfig } from 'payload'
 import { slugField } from '../fields/slug'
 import { seoGroup } from '../fields/seo'
-import { isAdmin, isStaff, publishedOrStaff, updateUnlessPublishing } from '../access'
+import { adminOnlyInPanel, isAdmin, isStaff, publishedOrStaff, updateUnlessPublishing } from '../access'
 
 export const Projects: CollectionConfig = {
   slug: 'projects',
+  labels: { singular: 'Projekt', plural: 'Projekte' },
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['name', 'developer', 'constructionPhase', '_status', 'updatedAt'],
-    group: 'Listings',
+    defaultColumns: ['name', 'developer', 'area', 'constructionPhase', '_status', 'updatedAt'],
+    group: 'Listime',
+    description: 'Rezidenca dhe komplekse të reja. Njësitë shtohen te “Njësitë”.',
   },
   versions: { drafts: { autosave: { interval: 800 } }, maxPerDoc: 25 },
   access: {
@@ -19,21 +21,35 @@ export const Projects: CollectionConfig = {
   },
   fields: [
     // Proper name — same in every language. Not localized.
-    { name: 'name', type: 'text', required: true },
+    { name: 'name', type: 'text', label: 'Emri i projektit', required: true },
     slugField('name'),
 
-    { name: 'tagline', type: 'text', localized: true },
-    { name: 'description', type: 'richText', localized: true },
+    { name: 'tagline', type: 'text', label: 'Slogani', localized: true },
+    { name: 'description', type: 'richText', label: 'Përshkrimi', localized: true },
 
     {
       name: 'developer',
       type: 'relationship',
+      label: 'Investitori',
       relationTo: 'companies',
       required: true,
       index: true,
     },
-    { name: 'area', type: 'relationship', relationTo: 'areas', required: true, index: true },
-    { name: 'location', type: 'point', required: true },
+    {
+      name: 'area',
+      type: 'relationship',
+      label: 'Zona',
+      relationTo: 'areas',
+      required: true,
+      index: true,
+    },
+    {
+      name: 'location',
+      type: 'point',
+      label: 'Vendndodhja në hartë',
+      required: true,
+      admin: { description: 'Njësitë e këtij projekti e trashëgojnë këtë vendndodhje.' },
+    },
 
     /**
      * The agent who owns this development's leads.
@@ -48,11 +64,12 @@ export const Projects: CollectionConfig = {
     {
       name: 'agent',
       type: 'relationship',
+      label: 'Agjenti',
       relationTo: 'users',
       filterOptions: { role: { in: ['agent', 'admin'] } },
       admin: {
         position: 'sidebar',
-        description: 'Receives enquiries for this project and all of its units.',
+        description: 'Merr kërkesat për këtë projekt dhe për të gjitha njësitë e tij.',
       },
     },
 
@@ -62,6 +79,7 @@ export const Projects: CollectionConfig = {
         {
           name: 'constructionPhase',
           type: 'select',
+          label: 'Faza e ndërtimit',
           required: true,
           defaultValue: 'underConstruction',
           options: [
@@ -69,11 +87,15 @@ export const Projects: CollectionConfig = {
             { label: 'Në ndërtim', value: 'underConstruction' },
             { label: 'Përfunduar', value: 'completed' },
           ],
-          admin: { width: '50%' },
+          admin: {
+            width: '50%',
+            description: 'Faza e gjithë projektit. Ndryshe nga faza e një njësie të veçantë.',
+          },
         },
         {
           name: 'completionDate',
           type: 'date',
+          label: 'Data e përfundimit',
           admin: { width: '50%', date: { pickerAppearance: 'monthOnly' } },
         },
       ],
@@ -82,14 +104,17 @@ export const Projects: CollectionConfig = {
     {
       name: 'gallery',
       type: 'array',
+      label: 'Galeria',
       minRows: 1,
+      labels: { singular: 'Foto', plural: 'Foto' },
+      admin: { description: 'Fotoja e parë shfaqet në listën e projekteve.' },
       fields: [
-        { name: 'image', type: 'upload', relationTo: 'media', required: true },
-        { name: 'caption', type: 'text', localized: true },
+        { name: 'image', type: 'upload', label: 'Fotoja', relationTo: 'media', required: true },
+        { name: 'caption', type: 'text', label: 'Përshkrimi i fotos', localized: true },
       ],
     },
-    { name: 'sitePlan', type: 'upload', relationTo: 'media' },
-    { name: 'brochure', type: 'upload', relationTo: 'media' },
+    { name: 'sitePlan', type: 'upload', label: 'Plani i sitit', relationTo: 'media' },
+    { name: 'brochure', type: 'upload', label: 'Broshura', relationTo: 'media' },
 
     // Denormalized so the project card doesn't aggregate units on render.
     // Recomputed from published units by the afterChange/afterDelete hooks in
@@ -97,18 +122,31 @@ export const Projects: CollectionConfig = {
     {
       name: 'unitTypesSummary',
       type: 'array',
-      admin: { readOnly: true, description: 'Derived from published units.' },
+      label: 'Përmbledhje e njësive',
+      // Derived and read-only: nothing an agent can act on, so it stays out of
+      // their form. Recomputed by the hooks above whenever a unit moves.
+      admin: {
+        readOnly: true,
+        condition: adminOnlyInPanel,
+        description: 'E llogaritur nga njësitë e publikuara. Nuk plotësohet me dorë.',
+      },
       fields: [
-        { name: 'rooms', type: 'text' },
-        { name: 'areaFrom', type: 'number' },
-        { name: 'areaTo', type: 'number' },
-        { name: 'priceFrom', type: 'number' },
-        { name: 'availableCount', type: 'number' },
+        { name: 'rooms', type: 'text', label: 'Dhomat' },
+        { name: 'areaFrom', type: 'number', label: 'Sipërfaqja nga' },
+        { name: 'areaTo', type: 'number', label: 'Sipërfaqja deri' },
+        { name: 'priceFrom', type: 'number', label: 'Çmimi nga' },
+        { name: 'availableCount', type: 'number', label: 'Njësi të lira' },
       ],
     },
 
-    { name: 'featured', type: 'checkbox', defaultValue: false, admin: { position: 'sidebar' } },
-    { name: 'publishedAt', type: 'date', admin: { position: 'sidebar' } },
+    {
+      name: 'featured',
+      type: 'checkbox',
+      label: 'I promovuar',
+      defaultValue: false,
+      admin: { position: 'sidebar' },
+    },
+    { name: 'publishedAt', type: 'date', label: 'Publikuar më', admin: { position: 'sidebar' } },
 
     seoGroup,
   ],

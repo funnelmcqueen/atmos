@@ -17,12 +17,14 @@ const slugify = (value: string): string =>
 export const slugField = (from = 'title'): Field => ({
   name: 'slug',
   type: 'text',
+  label: 'Adresa në sajt (slug)',
   required: true,
   unique: true,
   index: true,
   admin: {
     position: 'sidebar',
-    description: 'Generated from the Albanian title. Changing it breaks existing links.',
+    description:
+      'Krijohet vetë nga titulli shqip. Po e ndryshove, lidhjet ekzistuese prishen.',
   },
   hooks: {
     beforeValidate: [

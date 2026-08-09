@@ -134,73 +134,91 @@ export interface UserAuthOperations {
   };
 }
 /**
+ * Prona individuale. Njësitë e projekteve janë koleksion më vete.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "properties".
  */
 export interface Property {
   id: number;
-  title: string;
   /**
-   * Generated from the Albanian title. Changing it breaks existing links.
-   */
-  slug: string;
-  description?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  /**
-   * Land hides rooms, floor and orientation.
+   * Për truall fshihen dhomat, kati dhe orientimi.
    */
   propertyType: 'apartment' | 'villa' | 'house' | 'shop' | 'office' | 'warehouse' | 'land';
-  price?: number | null;
-  currency?: ('EUR' | 'ALL') | null;
-  priceOnRequest?: boolean | null;
-  /**
-   * Derived. For sorting only.
-   */
-  priceEur?: number | null;
-  rentPeriod?: ('monthly' | 'nightly') | null;
-  /**
-   * Price per m² is calculated from this.
-   */
-  areaGross: number;
-  areaNet?: number | null;
-  terraceSqm?: number | null;
-  commonAreaSqm?: number | null;
-  /**
-   * Albanian convention: 2+1, 1+1+2
-   */
-  rooms?: string | null;
-  bedrooms?: number | null;
-  bathrooms?: number | null;
-  floor?: number | null;
-  /**
-   * Listings often quote two or three.
-   */
-  orientation?: ('N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW')[] | null;
   listingType: 'sale' | 'rent';
   /**
-   * Market state. Separate from published/draft.
+   * Gjendja te blerësi. Nuk ka lidhje me publikimin: një pronë e rezervuar mbetet e publikuar në sajt.
    */
   status: 'available' | 'reserved' | 'sold';
+  /**
+   * Niveli i përfundimit të kësaj ndërtese. Ndryshe nga faza e një projekti të ri.
+   */
   buildingPhase?: ('brick' | 'facade' | 'finished' | 'existing') | null;
   /**
-   * A primary filter in this market.
+   * Prona pranohet për kredi bankare. Filtër kryesor në këtë treg — mos e lër bosh nëse e di përgjigjen.
    */
   mortgageEligible?: boolean | null;
   /**
-   * Filter facets. Add options in code, never free text.
+   * Lagjja ose qyteti. Kjo është ajo mbi të cilën filtrohet kërkimi.
+   */
+  area: number | Area;
+  street?: string | null;
+  /**
+   * P.sh. “Pranë Rotondës”.
+   */
+  landmark?: string | null;
+  /**
+   * Lëvize shënjuesin mbi ndërtesë. Ushqen hartën dhe kërkimin me rreze.
+   *
+   * @minItems 2
+   * @maxItems 2
+   */
+  location: [number, number];
+  /**
+   * Zgjidhe kur pronari nuk do çmim publik. Fusha e çmimit fshihet dhe prona shfaqet si “Çmimi me kërkesë”.
+   */
+  priceOnRequest?: boolean | null;
+  price?: number | null;
+  /**
+   * Shkruaje çmimin siç e jep pronari. Konvertimi bëhet vetë.
+   */
+  currency?: ('EUR' | 'ALL') | null;
+  rentPeriod?: ('monthly' | 'nightly') | null;
+  /**
+   * Bruto: me muret dhe pjesën takuese, siç shitet. Çmimi për m² llogaritet mbi këtë fushë.
+   */
+  areaGross: number;
+  /**
+   * Vetëm sipërfaqja e brendshme e shfrytëzueshme. Gjithmonë më e vogël se bruto.
+   */
+  areaNet?: number | null;
+  /**
+   * Jashtë sipërfaqes neto.
+   */
+  terraceSqm?: number | null;
+  /**
+   * Pjesa takuese e shkallëve dhe korridoreve.
+   */
+  commonAreaSqm?: number | null;
+  /**
+   * Konventa shqiptare: 2+1, 1+1+2. Numri para “+” janë dhomat e gjumit, pas tij dhoma e ndenjes.
+   */
+  rooms?: string | null;
+  /**
+   * Vetëm numri, për filtrat.
+   */
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  /**
+   * 0 = përdhesë. Nëntokë shkruhet me minus, p.sh. -1.
+   */
+  floor?: number | null;
+  /**
+   * Zgjidh të gjitha anët që ka prona, shpesh dy ose tre.
+   */
+  orientation?: ('N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW')[] | null;
+  /**
+   * Këto janë filtrat e kërkimit. Opsionet shtohen në kod — mos shkruaj tekst të lirë.
    */
   features?:
     | (
@@ -221,6 +239,9 @@ export interface Property {
         | 'streetFront'
       )[]
     | null;
+  /**
+   * Foto e parë është ajo që shfaqet në listë. Të paktën një foto është e detyrueshme.
+   */
   gallery?:
     | {
         image: number | Media;
@@ -229,54 +250,71 @@ export interface Property {
       }[]
     | null;
   /**
-   * Set automatically on first publish.
+   * Shkruaje pasi ke plotësuar të dhënat. P.sh. “Apartament 2+1 te Bllok, 96 m²”.
    */
-  publishedAt?: string | null;
+  title: string;
   /**
-   * e.g. ATM-2026-0142
+   * Gjendja, pozicioni, ç’ka afër. Pa numra telefoni dhe pa çmim.
+   */
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Publike. Çfarë dokumentacioni ka verifikuar Atmos për këtë pronë.
+   */
+  documentationNote?: string | null;
+  ownerName?: string | null;
+  ownerPhone?: string | null;
+  /**
+   * Vetëm për ekipin. Nuk dalin as në API publike.
+   */
+  internalNotes?: string | null;
+  /**
+   * Krijohet vetë nga titulli shqip. Po e ndryshove, lidhjet ekzistuese prishen.
+   */
+  slug: string;
+  /**
+   * P.sh. ATM-2026-0142.
    */
   reference?: string | null;
-  area: number | Area;
-  street?: string | null;
   /**
-   * e.g. Pranë Rotondës
-   */
-  landmark?: string | null;
-  /**
-   * Drag the pin. Drives the map and radius search.
-   *
-   * @minItems 2
-   * @maxItems 2
-   */
-  location: [number, number];
-  /**
-   * Owns this listing. Only an admin can reassign it.
+   * Kjo pronë i përket këtij agjenti. Vetëm administratori mund ta ndryshojë.
    */
   agent: number | User;
+  /**
+   * I llogaritur. Vetëm për renditje dhe filtra.
+   */
+  priceEur?: number | null;
+  /**
+   * Vendoset vetë kur publikohet për herë të parë.
+   */
+  publishedAt?: string | null;
   verified?: boolean | null;
   featured?: boolean | null;
   /**
-   * Public. What documentation Atmos has verified.
-   */
-  documentationNote?: string | null;
-  /**
-   * Private. Never rendered publicly.
-   */
-  ownerName?: string | null;
-  ownerPhone?: string | null;
-  internalNotes?: string | null;
-  /**
-   * The owner submission this came from.
+   * Kërkesa e pronarit nga e cila lindi kjo pronë.
    */
   sourceRequest?: (number | null) | ListingRequest;
   seo?: {
     /**
-     * Leave empty to generate from the title.
+     * Lëre bosh që të krijohet vetë nga titulli.
      */
     metaTitle?: string | null;
     metaDescription?: string | null;
     /**
-     * Falls back to the first gallery image.
+     * Nëse bosh, merret fotoja e parë e galerisë.
      */
     ogImage?: (number | null) | Media;
     noindex?: boolean | null;
@@ -286,13 +324,66 @@ export interface Property {
   _status?: ('draft' | 'published') | null;
 }
 /**
+ * Qytete dhe lagje. Çdo pronë lidhet me një zonë.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "areas".
+ */
+export interface Area {
+  id: number;
+  name: string;
+  /**
+   * Krijohet vetë nga titulli shqip. Po e ndryshove, lidhjet ekzistuese prishen.
+   */
+  slug: string;
+  /**
+   * Vetëm dy nivele: qytet, ose lagje brenda një qyteti.
+   */
+  kind: 'city' | 'neighbourhood';
+  parent?: (number | null) | Area;
+  /**
+   * @minItems 2
+   * @maxItems 2
+   */
+  center?: [number, number] | null;
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  seo?: {
+    /**
+     * Lëre bosh që të krijohet vetë nga titulli.
+     */
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    /**
+     * Nëse bosh, merret fotoja e parë e galerisë.
+     */
+    ogImage?: (number | null) | Media;
+    noindex?: boolean | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
 export interface Media {
   id: number;
   /**
-   * Describe the photo. Required for anything shown to visitors.
+   * Përshkruaj çfarë duket në foto. E nevojshme për çdo foto që shfaqet te vizitorët.
    */
   alt?: string | null;
   credit?: string | null;
@@ -344,65 +435,23 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "areas".
- */
-export interface Area {
-  id: number;
-  name: string;
-  /**
-   * Generated from the Albanian title. Changing it breaks existing links.
-   */
-  slug: string;
-  kind: 'city' | 'neighbourhood';
-  parent?: (number | null) | Area;
-  /**
-   * @minItems 2
-   * @maxItems 2
-   */
-  center?: [number, number] | null;
-  description?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  seo?: {
-    /**
-     * Leave empty to generate from the title.
-     */
-    metaTitle?: string | null;
-    metaDescription?: string | null;
-    /**
-     * Falls back to the first gallery image.
-     */
-    ogImage?: (number | null) | Media;
-    noindex?: boolean | null;
-  };
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
 export interface User {
   id: number;
   name: string;
   /**
-   * Only an admin can change a role.
+   * Vetëm administratori mund ta ndryshojë rolin.
    */
   role: 'admin' | 'agent' | 'client';
+  /**
+   * Shfaqet publikisht te pronat e këtij agjenti dhe përdoret për WhatsApp. Me kod shteti, p.sh. +355 69 20 11 555.
+   */
   phone?: string | null;
   photo?: (number | null) | Media;
+  /**
+   * Publik. Shfaqet te kartela e agjentit në faqen e pronës.
+   */
   bio?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -424,6 +473,8 @@ export interface User {
   collection: 'users';
 }
 /**
+ * Prona që dërgojnë vetë pronarët. Verifikoji, pastaj krijo pronën me dorë.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "listing-requests".
  */
@@ -437,6 +488,9 @@ export interface ListingRequest {
   areaName?: string | null;
   address?: string | null;
   listingType: 'sale' | 'rent';
+  /**
+   * Siç e ka shkruar pronari, tekst i lirë.
+   */
   propertyType?: string | null;
   rooms?: string | null;
   areaSqm?: number | null;
@@ -454,91 +508,99 @@ export interface ListingRequest {
   termsAcceptedAt: string;
   submittedLocale?: string | null;
   /**
-   * Salted hash, for rate limiting.
+   * Hash i kriptuar, vetëm për kufizimin e abuzimeve.
    */
   ipHash?: string | null;
   assignedAgent?: (number | null) | User;
   internalNotes?: string | null;
   rejectionReason?: string | null;
   /**
-   * Set once the listing goes live.
+   * Lidhe pasi prona të jetë publikuar.
    */
   linkedProperty?: (number | null) | Property;
   updatedAt: string;
   createdAt: string;
 }
 /**
+ * Njësitë brenda një projekti. Zonën dhe vendndodhjen i marrin nga projekti.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "project-units".
  */
 export interface ProjectUnit {
   id: number;
+  /**
+   * Zona, vendndodhja dhe investitori merren nga ky projekt.
+   */
   project: number | Project;
+  /**
+   * P.sh. A-4-2 ose Ap. 12.
+   */
   unitCode: string;
   building?: string | null;
   floorPlan?: (number | null) | Media;
-  title: string;
   /**
-   * Generated from the Albanian title. Changing it breaks existing links.
-   */
-  slug: string;
-  description?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  /**
-   * Land hides rooms, floor and orientation.
+   * Për truall fshihen dhomat, kati dhe orientimi.
    */
   propertyType: 'apartment' | 'villa' | 'house' | 'shop' | 'office' | 'warehouse' | 'land';
-  price?: number | null;
-  currency?: ('EUR' | 'ALL') | null;
-  priceOnRequest?: boolean | null;
-  /**
-   * Derived. For sorting only.
-   */
-  priceEur?: number | null;
-  rentPeriod?: ('monthly' | 'nightly') | null;
-  /**
-   * Price per m² is calculated from this.
-   */
-  areaGross: number;
-  areaNet?: number | null;
-  terraceSqm?: number | null;
-  commonAreaSqm?: number | null;
-  /**
-   * Albanian convention: 2+1, 1+1+2
-   */
-  rooms?: string | null;
-  bedrooms?: number | null;
-  bathrooms?: number | null;
-  floor?: number | null;
-  /**
-   * Listings often quote two or three.
-   */
-  orientation?: ('N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW')[] | null;
   listingType: 'sale' | 'rent';
   /**
-   * Market state. Separate from published/draft.
+   * Gjendja te blerësi. Nuk ka lidhje me publikimin: një pronë e rezervuar mbetet e publikuar në sajt.
    */
   status: 'available' | 'reserved' | 'sold';
+  /**
+   * Niveli i përfundimit të kësaj ndërtese. Ndryshe nga faza e një projekti të ri.
+   */
   buildingPhase?: ('brick' | 'facade' | 'finished' | 'existing') | null;
   /**
-   * A primary filter in this market.
+   * Prona pranohet për kredi bankare. Filtër kryesor në këtë treg — mos e lër bosh nëse e di përgjigjen.
    */
   mortgageEligible?: boolean | null;
   /**
-   * Filter facets. Add options in code, never free text.
+   * Zgjidhe kur pronari nuk do çmim publik. Fusha e çmimit fshihet dhe prona shfaqet si “Çmimi me kërkesë”.
+   */
+  priceOnRequest?: boolean | null;
+  price?: number | null;
+  /**
+   * Shkruaje çmimin siç e jep pronari. Konvertimi bëhet vetë.
+   */
+  currency?: ('EUR' | 'ALL') | null;
+  rentPeriod?: ('monthly' | 'nightly') | null;
+  /**
+   * Bruto: me muret dhe pjesën takuese, siç shitet. Çmimi për m² llogaritet mbi këtë fushë.
+   */
+  areaGross: number;
+  /**
+   * Vetëm sipërfaqja e brendshme e shfrytëzueshme. Gjithmonë më e vogël se bruto.
+   */
+  areaNet?: number | null;
+  /**
+   * Jashtë sipërfaqes neto.
+   */
+  terraceSqm?: number | null;
+  /**
+   * Pjesa takuese e shkallëve dhe korridoreve.
+   */
+  commonAreaSqm?: number | null;
+  /**
+   * Konventa shqiptare: 2+1, 1+1+2. Numri para “+” janë dhomat e gjumit, pas tij dhoma e ndenjes.
+   */
+  rooms?: string | null;
+  /**
+   * Vetëm numri, për filtrat.
+   */
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  /**
+   * 0 = përdhesë. Nëntokë shkruhet me minus, p.sh. -1.
+   */
+  floor?: number | null;
+  /**
+   * Zgjidh të gjitha anët që ka prona, shpesh dy ose tre.
+   */
+  orientation?: ('N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW')[] | null;
+  /**
+   * Këto janë filtrat e kërkimit. Opsionet shtohen në kod — mos shkruaj tekst të lirë.
    */
   features?:
     | (
@@ -559,6 +621,9 @@ export interface ProjectUnit {
         | 'streetFront'
       )[]
     | null;
+  /**
+   * Foto e parë është ajo që shfaqet në listë. Të paktën një foto është e detyrueshme.
+   */
   gallery?:
     | {
         image: number | Media;
@@ -567,17 +632,47 @@ export interface ProjectUnit {
       }[]
     | null;
   /**
-   * Set automatically on first publish.
+   * Shkruaje pasi ke plotësuar të dhënat. P.sh. “Apartament 2+1 te Bllok, 96 m²”.
+   */
+  title: string;
+  /**
+   * Gjendja, pozicioni, ç’ka afër. Pa numra telefoni dhe pa çmim.
+   */
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Krijohet vetë nga titulli shqip. Po e ndryshove, lidhjet ekzistuese prishen.
+   */
+  slug: string;
+  /**
+   * I llogaritur. Vetëm për renditje dhe filtra.
+   */
+  priceEur?: number | null;
+  /**
+   * Vendoset vetë kur publikohet për herë të parë.
    */
   publishedAt?: string | null;
   seo?: {
     /**
-     * Leave empty to generate from the title.
+     * Lëre bosh që të krijohet vetë nga titulli.
      */
     metaTitle?: string | null;
     metaDescription?: string | null;
     /**
-     * Falls back to the first gallery image.
+     * Nëse bosh, merret fotoja e parë e galerisë.
      */
     ogImage?: (number | null) | Media;
     noindex?: boolean | null;
@@ -587,6 +682,8 @@ export interface ProjectUnit {
   _status?: ('draft' | 'published') | null;
 }
 /**
+ * Rezidenca dhe komplekse të reja. Njësitë shtohen te “Njësitë”.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "projects".
  */
@@ -594,7 +691,7 @@ export interface Project {
   id: number;
   name: string;
   /**
-   * Generated from the Albanian title. Changing it breaks existing links.
+   * Krijohet vetë nga titulli shqip. Po e ndryshove, lidhjet ekzistuese prishen.
    */
   slug: string;
   tagline?: string | null;
@@ -616,16 +713,24 @@ export interface Project {
   developer: number | Company;
   area: number | Area;
   /**
+   * Njësitë e këtij projekti e trashëgojnë këtë vendndodhje.
+   *
    * @minItems 2
    * @maxItems 2
    */
   location: [number, number];
   /**
-   * Receives enquiries for this project and all of its units.
+   * Merr kërkesat për këtë projekt dhe për të gjitha njësitë e tij.
    */
   agent?: (number | null) | User;
+  /**
+   * Faza e gjithë projektit. Ndryshe nga faza e një njësie të veçantë.
+   */
   constructionPhase: 'planning' | 'underConstruction' | 'completed';
   completionDate?: string | null;
+  /**
+   * Fotoja e parë shfaqet në listën e projekteve.
+   */
   gallery?:
     | {
         image: number | Media;
@@ -636,7 +741,7 @@ export interface Project {
   sitePlan?: (number | null) | Media;
   brochure?: (number | null) | Media;
   /**
-   * Derived from published units.
+   * E llogaritur nga njësitë e publikuara. Nuk plotësohet me dorë.
    */
   unitTypesSummary?:
     | {
@@ -652,12 +757,12 @@ export interface Project {
   publishedAt?: string | null;
   seo?: {
     /**
-     * Leave empty to generate from the title.
+     * Lëre bosh që të krijohet vetë nga titulli.
      */
     metaTitle?: string | null;
     metaDescription?: string | null;
     /**
-     * Falls back to the first gallery image.
+     * Nëse bosh, merret fotoja e parë e galerisë.
      */
     ogImage?: (number | null) | Media;
     noindex?: boolean | null;
@@ -667,6 +772,8 @@ export interface Project {
   _status?: ('draft' | 'published') | null;
 }
 /**
+ * Investitorë dhe kompani ndërtimi.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "companies".
  */
@@ -674,7 +781,7 @@ export interface Company {
   id: number;
   name: string;
   /**
-   * Generated from the Albanian title. Changing it breaks existing links.
+   * Krijohet vetë nga titulli shqip. Po e ndryshove, lidhjet ekzistuese prishen.
    */
   slug: string;
   about?: {
@@ -716,22 +823,22 @@ export interface Company {
       }[]
     | null;
   /**
-   * Admin only. Drives the partner badge.
+   * Vetëm administratori. Kjo ndez distinktivin e partnerit në sajt.
    */
   verifiedPartner?: boolean | null;
   legalName?: string | null;
   /**
-   * Albanian tax ID. Internal.
+   * Numri i identifikimit tatimor. I brendshëm.
    */
   nipt?: string | null;
   seo?: {
     /**
-     * Leave empty to generate from the title.
+     * Lëre bosh që të krijohet vetë nga titulli.
      */
     metaTitle?: string | null;
     metaDescription?: string | null;
     /**
-     * Falls back to the first gallery image.
+     * Nëse bosh, merret fotoja e parë e galerisë.
      */
     ogImage?: (number | null) | Media;
     noindex?: boolean | null;
@@ -748,9 +855,12 @@ export interface Article {
   id: number;
   title: string;
   /**
-   * Generated from the Albanian title. Changing it breaks existing links.
+   * Krijohet vetë nga titulli shqip. Po e ndryshove, lidhjet ekzistuese prishen.
    */
   slug: string;
+  /**
+   * Dy fjali që shfaqen në listë dhe në Google.
+   */
   excerpt?: string | null;
   body?: {
     root: {
@@ -775,17 +885,17 @@ export interface Article {
   author?: (number | null) | User;
   publishedAt?: string | null;
   /**
-   * Sponsored content must be labelled on the page. Not optional.
+   * Përmbajtja e sponsorizuar shënohet si e tillë në faqe. Nuk është me zgjedhje.
    */
   contentType: 'editorial' | 'analysis' | 'sponsored';
   seo?: {
     /**
-     * Leave empty to generate from the title.
+     * Lëre bosh që të krijohet vetë nga titulli.
      */
     metaTitle?: string | null;
     metaDescription?: string | null;
     /**
-     * Falls back to the first gallery image.
+     * Nëse bosh, merret fotoja e parë e galerisë.
      */
     ogImage?: (number | null) | Media;
     noindex?: boolean | null;
@@ -795,6 +905,8 @@ export interface Article {
   _status?: ('draft' | 'published') | null;
 }
 /**
+ * Kontakte nga faqet e pronave dhe projekteve. Kthe përgjigje brenda ditës.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "enquiries".
  */
@@ -808,15 +920,18 @@ export interface Enquiry {
   sourceId: string;
   sourceTitle?: string | null;
   locale?: string | null;
+  /**
+   * Shënoje pasi ta kesh kontaktuar personin.
+   */
   handled?: boolean | null;
   /**
-   * Resolved on submit from the listing or project. Empty means it went to the shared inbox.
+   * Merret nga prona ose projekti kur dërgohet. Bosh do të thotë se shkoi te kutia e përbashkët.
    */
   assignedAgent?: (number | null) | User;
   termsVersion?: string | null;
   termsAcceptedAt?: string | null;
   /**
-   * Salted hash, for rate limiting.
+   * Hash i kriptuar, vetëm për kufizimin e abuzimeve.
    */
   ipHash?: string | null;
   updatedAt: string;
@@ -933,14 +1048,18 @@ export interface PayloadMigration {
  * via the `definition` "properties_select".
  */
 export interface PropertiesSelect<T extends boolean = true> {
-  title?: T;
-  slug?: T;
-  description?: T;
   propertyType?: T;
+  listingType?: T;
+  status?: T;
+  buildingPhase?: T;
+  mortgageEligible?: T;
+  area?: T;
+  street?: T;
+  landmark?: T;
+  location?: T;
+  priceOnRequest?: T;
   price?: T;
   currency?: T;
-  priceOnRequest?: T;
-  priceEur?: T;
   rentPeriod?: T;
   areaGross?: T;
   areaNet?: T;
@@ -951,10 +1070,6 @@ export interface PropertiesSelect<T extends boolean = true> {
   bathrooms?: T;
   floor?: T;
   orientation?: T;
-  listingType?: T;
-  status?: T;
-  buildingPhase?: T;
-  mortgageEligible?: T;
   features?: T;
   gallery?:
     | T
@@ -963,19 +1078,19 @@ export interface PropertiesSelect<T extends boolean = true> {
         caption?: T;
         id?: T;
       };
-  publishedAt?: T;
-  reference?: T;
-  area?: T;
-  street?: T;
-  landmark?: T;
-  location?: T;
-  agent?: T;
-  verified?: T;
-  featured?: T;
+  title?: T;
+  description?: T;
   documentationNote?: T;
   ownerName?: T;
   ownerPhone?: T;
   internalNotes?: T;
+  slug?: T;
+  reference?: T;
+  agent?: T;
+  priceEur?: T;
+  publishedAt?: T;
+  verified?: T;
+  featured?: T;
   sourceRequest?: T;
   seo?:
     | T
@@ -998,14 +1113,14 @@ export interface ProjectUnitsSelect<T extends boolean = true> {
   unitCode?: T;
   building?: T;
   floorPlan?: T;
-  title?: T;
-  slug?: T;
-  description?: T;
   propertyType?: T;
+  listingType?: T;
+  status?: T;
+  buildingPhase?: T;
+  mortgageEligible?: T;
+  priceOnRequest?: T;
   price?: T;
   currency?: T;
-  priceOnRequest?: T;
-  priceEur?: T;
   rentPeriod?: T;
   areaGross?: T;
   areaNet?: T;
@@ -1016,10 +1131,6 @@ export interface ProjectUnitsSelect<T extends boolean = true> {
   bathrooms?: T;
   floor?: T;
   orientation?: T;
-  listingType?: T;
-  status?: T;
-  buildingPhase?: T;
-  mortgageEligible?: T;
   features?: T;
   gallery?:
     | T
@@ -1028,6 +1139,10 @@ export interface ProjectUnitsSelect<T extends boolean = true> {
         caption?: T;
         id?: T;
       };
+  title?: T;
+  description?: T;
+  slug?: T;
+  priceEur?: T;
   publishedAt?: T;
   seo?:
     | T

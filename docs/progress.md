@@ -69,12 +69,82 @@
 - **Not done:** the send was through a local production build, **not the deployed site** — there is no `.vercel` link, no Vercel CLI, and no deployment URL in the repo, so there was nothing to submit against. The code path is identical; what is unproven is the Vercel environment wiring.
 - **Verified:** `typecheck`, `lint` (0 errors), `check:routes` (16 routes), `test:e2e` 45/45 from a cold start.
 
+## Albanian admin — 9 Aug 2026
+
+- **Built:** The panel is Albanian-only. Payload 3.87 ships no `sq` pack, so `src/i18n/sq.ts` is ours: Albanian for the chrome an agent lives in, deep-merged over `en` so an untranslated key renders English rather than a key path. Albanian `labels`, sidebar `group`s and field labels across all ten collections, with select options and `admin.description`s on the fields that get entered wrong — gross vs net area, the `2+1` rooms notation, price-on-request, mortgage, and market status vs published.
+- **Reordered the property form** the way an agent works: type → location → price → size → layout → features → photos → title and description → owner's private details. Nine `collapsible` sections, composed in `src/fields/listing.ts` so a unit gets the same form minus the parts it inherits from its project. Nothing starts collapsed: `initCollapsed` is one static boolean shared by create and edit (Payload only reads a per-document preference once a document has an id), and a collapsed required field is a half-filled listing.
+- **Hidden from agents** via `admin.condition`: the derived `priceEur`, the SEO group, `unitTypesSummary`, and the consent/abuse plumbing on the two inbox collections.
+- **No migration.** `collapsible` and `row` are presentational; `generate:types` produced only comment and ordering churn, and `migrate:status` is clean. A `group` would have nested the columns and broken the `listing_index` union.
+- **Verified:** `typecheck`, `lint` (0 errors), `check:routes` (16 routes), `test:e2e` 48/48. New spec `tests/e2e/admin-agent.e2e.spec.ts` walks the whole create flow at 390×844 as an agent, photo upload included, and asserts the section order, that nothing is collapsed, and that the draft persists with the agent assigned by hook.
+- **Test agent:** `pnpm create:agent` → `agjent@atmos.al` / `agjent1234`. Idempotent, and separate from `pnpm seed` because the seed deliberately leaves users alone.
+
 ---
 
 # Known quirks
 
 Things that look like bugs, are not, and cost someone an hour already. Add to
 this rather than rediscovering.
+
+## A `row` inside a `collapsible` eats fields that have field-level `access`
+
+**Symptom.** `ownerName` and `ownerPhone` simply were not in the DOM on the
+property form — no error, no empty input, nothing. `internalNotes`, a sibling in
+the same collapsible, rendered fine.
+
+The difference is not access and not nesting on their own, it is the pair. Every
+other section here has rows inside collapsibles and they all render; those rows'
+children just have no `access` key. Move a field with field-level `access` into a
+row inside a collapsible and it disappears.
+
+Keep such fields as direct children of the collapsible. The cost is a full-width
+input instead of a 50/50 pair, which on a phone is what it renders as anyway.
+
+## `admin.condition` on a required field makes it optional in the generated types
+
+Adding `condition: adminOnlyInPanel` to `termsVersion`, `termsAcceptedAt` and
+`sourceId` flipped them from `x: string` to `x?: string | null` in
+`payload-types.ts`. That is Payload being correct — a field the panel never
+renders may never be submitted — but those three are the consent record and the
+enquiry's source link, so they stay visible instead.
+
+Re-run `pnpm generate:types` and read the diff after adding any `condition`. If
+a required field's type changed, the condition is the wrong tool.
+
+## The rich text editor ignores the language pack
+
+`@payloadcms/richtext-lexical` does not read `supportedLanguages`. Every feature
+ships an i18n object keyed by language code, and the editor merges only the
+codes it finds there into the `lexical` namespace. A custom code like `sq` gets
+an empty namespace and every key renders as its own path — the description field
+on a property literally displayed `lexical:general:placeholder`.
+
+Fixed by supplying the whole namespace through `i18n.translations.sq.lexical` in
+`src/i18n/sq.ts`, keyed by each feature's `key`. Payload merges the editor's own
+i18n on top of that but cannot clobber it, because the editor has no `sq`.
+
+Add a feature to `lexicalEditor()` and its labels return to English until they
+are added there.
+
+## Dates in the admin are English
+
+`importDateFNSLocale` has no `sq` branch and returns `undefined` for an unknown
+key, which would leave the date picker with no locale at all. `dateFNSKey` is
+therefore `'en-US'`, so the picker's month names and the "Ruajtur less than a
+minute më parë" stamp are English inside otherwise Albanian chrome.
+
+Fixing it properly means shipping a date-fns `sq` locale into the config, not
+changing this key.
+
+## `pnpm check:routes` breaks the dev server you are running
+
+`check:routes` runs a production `next build` into the same `.next` the dev
+server is serving from. The dev server survives but its module graph does not:
+every subsequent request fails with Turbopack's "module factory is not
+available", which reads like a stale browser cache and is not.
+
+Symptom is a page that hangs and a Playwright `net::ERR_ABORTED`. Restart the
+dev server. Do not run `check:routes` and `pnpm dev` against the same checkout
+at the same time.
 
 ## Two `<h1>`s during a client-side navigation
 

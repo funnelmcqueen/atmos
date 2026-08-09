@@ -3,7 +3,8 @@ import { anyone, isAdmin, isStaff } from '../access'
 
 export const Media: CollectionConfig = {
   slug: 'media',
-  admin: { group: 'System' },
+  labels: { singular: 'Skedar', plural: 'Media' },
+  admin: { group: 'Sistemi', defaultColumns: ['filename', 'alt', 'updatedAt'] },
   access: { read: anyone, create: isStaff, update: isStaff, delete: isAdmin },
   upload: {
     mimeTypes: ['image/*', 'application/pdf'],
@@ -19,9 +20,13 @@ export const Media: CollectionConfig = {
     {
       name: 'alt',
       type: 'text',
+      label: 'Përshkrimi i fotos',
       localized: true,
-      admin: { description: 'Describe the photo. Required for anything shown to visitors.' },
+      admin: {
+        description:
+          'Përshkruaj çfarë duket në foto. E nevojshme për çdo foto që shfaqet te vizitorët.',
+      },
     },
-    { name: 'credit', type: 'text' },
+    { name: 'credit', type: 'text', label: 'Kredia' },
   ],
 }

@@ -5,10 +5,11 @@ import { isAdmin, isStaff, publishedOrStaff, updateUnlessPublishing } from '../a
 
 export const Articles: CollectionConfig = {
   slug: 'articles',
+  labels: { singular: 'Artikull', plural: 'Artikuj' },
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'category', 'publishedAt', '_status'],
-    group: 'Editorial',
+    defaultColumns: ['title', 'category', 'author', 'publishedAt', '_status'],
+    group: 'Editoriale',
   },
   versions: { drafts: { autosave: { interval: 800 } }, maxPerDoc: 25 },
   access: {
@@ -18,15 +19,23 @@ export const Articles: CollectionConfig = {
     delete: isAdmin,
   },
   fields: [
-    { name: 'title', type: 'text', required: true, localized: true },
+    { name: 'title', type: 'text', label: 'Titulli', required: true, localized: true },
     slugField('title'),
-    { name: 'excerpt', type: 'textarea', localized: true, maxLength: 220 },
-    { name: 'body', type: 'richText', localized: true },
-    { name: 'coverImage', type: 'upload', relationTo: 'media' },
+    {
+      name: 'excerpt',
+      type: 'textarea',
+      label: 'Hyrja',
+      localized: true,
+      maxLength: 220,
+      admin: { description: 'Dy fjali që shfaqen në listë dhe në Google.' },
+    },
+    { name: 'body', type: 'richText', label: 'Teksti', localized: true },
+    { name: 'coverImage', type: 'upload', label: 'Fotoja e ballinës', relationTo: 'media' },
 
     {
       name: 'category',
       type: 'select',
+      label: 'Kategoria',
       required: true,
       options: [
         { label: 'Blerje', value: 'buying' },
@@ -39,25 +48,51 @@ export const Articles: CollectionConfig = {
     },
 
     // Tags that let the article surface on the related entity pages.
-    { name: 'relatedAreas', type: 'relationship', relationTo: 'areas', hasMany: true },
-    { name: 'relatedCompanies', type: 'relationship', relationTo: 'companies', hasMany: true },
-    { name: 'relatedProjects', type: 'relationship', relationTo: 'projects', hasMany: true },
+    {
+      name: 'relatedAreas',
+      type: 'relationship',
+      label: 'Zonat e lidhura',
+      relationTo: 'areas',
+      hasMany: true,
+    },
+    {
+      name: 'relatedCompanies',
+      type: 'relationship',
+      label: 'Kompanitë e lidhura',
+      relationTo: 'companies',
+      hasMany: true,
+    },
+    {
+      name: 'relatedProjects',
+      type: 'relationship',
+      label: 'Projektet e lidhura',
+      relationTo: 'projects',
+      hasMany: true,
+    },
 
-    { name: 'author', type: 'relationship', relationTo: 'users', admin: { position: 'sidebar' } },
-    { name: 'publishedAt', type: 'date', admin: { position: 'sidebar' } },
+    {
+      name: 'author',
+      type: 'relationship',
+      label: 'Autori',
+      relationTo: 'users',
+      admin: { position: 'sidebar' },
+    },
+    { name: 'publishedAt', type: 'date', label: 'Publikuar më', admin: { position: 'sidebar' } },
     {
       name: 'contentType',
       type: 'select',
+      label: 'Lloji i përmbajtjes',
       required: true,
       defaultValue: 'editorial',
       options: [
         { label: 'Editorial', value: 'editorial' },
-        { label: 'Analysis', value: 'analysis' },
-        { label: 'Sponsored', value: 'sponsored' },
+        { label: 'Analizë', value: 'analysis' },
+        { label: 'I sponsorizuar', value: 'sponsored' },
       ],
       admin: {
         position: 'sidebar',
-        description: 'Sponsored content must be labelled on the page. Not optional.',
+        description:
+          'Përmbajtja e sponsorizuar shënohet si e tillë në faqe. Nuk është me zgjedhje.',
       },
     },
 

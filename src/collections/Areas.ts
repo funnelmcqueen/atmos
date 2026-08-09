@@ -9,30 +9,40 @@ import { anyone, isAdmin, isStaff } from '../access'
  */
 export const Areas: CollectionConfig = {
   slug: 'areas',
-  admin: { useAsTitle: 'name', defaultColumns: ['name', 'parent', 'kind'], group: 'Directory' },
+  labels: { singular: 'Zonë', plural: 'Zonat' },
+  admin: {
+    useAsTitle: 'name',
+    defaultColumns: ['name', 'parent', 'kind', 'updatedAt'],
+    group: 'Direktori',
+    description: 'Qytete dhe lagje. Çdo pronë lidhet me një zonë.',
+  },
   access: { read: anyone, create: isStaff, update: isStaff, delete: isAdmin },
   fields: [
-    { name: 'name', type: 'text', required: true },
+    // Proper name — same in every language. Not localized.
+    { name: 'name', type: 'text', label: 'Emri', required: true },
     slugField('name'),
     {
       name: 'kind',
       type: 'select',
+      label: 'Lloji',
       required: true,
       defaultValue: 'neighbourhood',
       options: [
-        { label: 'City', value: 'city' },
-        { label: 'Neighbourhood', value: 'neighbourhood' },
+        { label: 'Qytet', value: 'city' },
+        { label: 'Lagje', value: 'neighbourhood' },
       ],
+      admin: { description: 'Vetëm dy nivele: qytet, ose lagje brenda një qyteti.' },
     },
     {
       name: 'parent',
       type: 'relationship',
+      label: 'Qyteti',
       relationTo: 'areas',
       filterOptions: { kind: { equals: 'city' } },
       admin: { condition: (data) => data?.kind === 'neighbourhood' },
     },
-    { name: 'center', type: 'point' },
-    { name: 'description', type: 'richText', localized: true },
+    { name: 'center', type: 'point', label: 'Qendra në hartë' },
+    { name: 'description', type: 'richText', label: 'Përshkrimi', localized: true },
     seoGroup,
   ],
 }

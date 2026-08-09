@@ -11,6 +11,7 @@
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
     "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
     "check:routes": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/check-routes.ts",
+    "create:agent": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/create-agent.ts",
     "lint": "cross-env NODE_OPTIONS=--no-deprecation eslint .",
     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
     "seed": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/seed.ts",

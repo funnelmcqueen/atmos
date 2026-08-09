@@ -15,6 +15,7 @@ import { Enquiries } from './collections/Enquiries'
 import { Articles } from './collections/Articles'
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
+import { SQ_LANGUAGE_CODE, supportedLanguages, translations } from './i18n/sq'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -23,6 +24,17 @@ export default buildConfig({
     user: Users.slug,
     importMap: { baseDir: path.resolve(dirname) },
     meta: { titleSuffix: ' — Atmos' },
+  },
+
+  // The panel is Albanian-only. Agents are the people who live in it and they
+  // work in Albanian; a language switcher would only ever offer them a worse
+  // option. Payload ships no `sq` pack, so `src/i18n/sq.ts` is ours — read the
+  // note there before changing this.
+  i18n: {
+    fallbackLanguage: SQ_LANGUAGE_CODE,
+    supportedLanguages,
+    // The rich text editor keeps its own namespace and ignores the pack.
+    translations,
   },
 
   collections: [

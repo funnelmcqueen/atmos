@@ -8,7 +8,12 @@ export const Users: CollectionConfig = {
     maxLoginAttempts: 5,
     lockTime: 10 * 60 * 1000,
   },
-  admin: { useAsTitle: 'name', defaultColumns: ['name', 'email', 'role'], group: 'System' },
+  labels: { singular: 'Përdorues', plural: 'Përdoruesit' },
+  admin: {
+    useAsTitle: 'name',
+    defaultColumns: ['name', 'email', 'role', 'phone', 'updatedAt'],
+    group: 'Sistemi',
+  },
   access: {
     read: ({ req: { user } }) => {
       if (!user) return false
@@ -24,18 +29,40 @@ export const Users: CollectionConfig = {
     delete: isAdmin,
   },
   fields: [
-    { name: 'name', type: 'text', required: true },
+    { name: 'name', type: 'text', label: 'Emri dhe mbiemri', required: true },
     {
       name: 'role',
       type: 'select',
+      label: 'Roli',
       required: true,
       defaultValue: 'client',
-      options: ['admin', 'agent', 'client'],
+      options: [
+        { label: 'Administrator', value: 'admin' },
+        { label: 'Agjent', value: 'agent' },
+        { label: 'Klient', value: 'client' },
+      ],
       access: { update: isAdminField, create: isAdminField },
-      admin: { description: 'Only an admin can change a role.' },
+      admin: { description: 'Vetëm administratori mund ta ndryshojë rolin.' },
     },
-    { name: 'phone', type: 'text' },
-    { name: 'photo', type: 'upload', relationTo: 'media' },
-    { name: 'bio', type: 'textarea', localized: true, admin: { condition: (d) => d?.role === 'agent' } },
+    {
+      name: 'phone',
+      type: 'text',
+      label: 'Telefoni',
+      admin: {
+        description:
+          'Shfaqet publikisht te pronat e këtij agjenti dhe përdoret për WhatsApp. Me kod shteti, p.sh. +355 69 20 11 555.',
+      },
+    },
+    { name: 'photo', type: 'upload', label: 'Fotoja', relationTo: 'media' },
+    {
+      name: 'bio',
+      type: 'textarea',
+      label: 'Përshkrimi',
+      localized: true,
+      admin: {
+        condition: (d) => d?.role === 'agent',
+        description: 'Publik. Shfaqet te kartela e agjentit në faqen e pronës.',
+      },
+    },
   ],
 }

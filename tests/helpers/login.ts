@@ -26,6 +26,10 @@ export async function login({
 
   await page.waitForURL(`${serverURL}/admin`)
 
-  const dashboardArtifact = page.locator('span[title="Dashboard"]')
+  // The panel is Albanian-only (src/i18n/sq.ts), so the step nav reads
+  // "Faqja kryesore". Asserting the translated string is deliberate: if the
+  // custom language pack ever fails to register, every admin test fails here
+  // with an obvious cause instead of somewhere further in.
+  const dashboardArtifact = page.locator('span[title="Faqja kryesore"]')
   await expect(dashboardArtifact).toBeVisible()
 }

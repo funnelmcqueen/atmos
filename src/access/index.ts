@@ -10,6 +10,18 @@ const idOf = (user: unknown): string | number | null =>
 
 export const anyone: Access = () => true
 
+/**
+ * Hides a field from the admin UI for anyone who is not an admin.
+ *
+ * This is decluttering, not security. `admin.condition` only controls what the
+ * panel draws — the field still reads and writes over the REST API. Use it for
+ * derived values and plumbing an agent has no reason to see. Anything that must
+ * actually be unreachable gets field-level `access`, the way `ownerPhone` and
+ * `internalNotes` do on Properties.
+ */
+export const adminOnlyInPanel = (_data: unknown, _sibling: unknown, { user }: { user: unknown }) =>
+  roleOf(user) === 'admin'
+
 export const isAdmin: Access = ({ req: { user } }) => roleOf(user) === 'admin'
 
 export const isStaff: Access = ({ req: { user } }) => {

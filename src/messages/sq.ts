@@ -51,6 +51,30 @@ export const BUILDING_PHASE_LABELS: Record<string, string> = {
   existing: 'Ndërtim ekzistues',
 }
 
+/**
+ * Compass points. The stored values stay N/NE/E/… — they are in the Postgres
+ * enum and in the initial migration. Only the label is Albanian.
+ *
+ * Note: the property and unit detail pages still render the raw value
+ * (`orientation.join(', ')`). Wiring them through this map is a public-page
+ * change and is not part of the admin work.
+ */
+export const ORIENTATION_LABELS: Record<string, string> = {
+  N: 'Veri',
+  NE: 'Verilindje',
+  E: 'Lindje',
+  SE: 'Juglindje',
+  S: 'Jug',
+  SW: 'Jugperëndim',
+  W: 'Perëndim',
+  NW: 'Veriperëndim',
+}
+
+export const CURRENCY_LABELS: Record<string, string> = {
+  EUR: 'Euro (€)',
+  ALL: 'Lek (L)',
+}
+
 export const FEATURE_LABELS: Record<string, string> = {
   parking: 'Parkim',
   elevator: 'Ashensor',
