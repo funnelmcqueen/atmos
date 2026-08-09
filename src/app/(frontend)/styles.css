@@ -1,5 +1,14 @@
+/*
+ * Payload's blank-template styling, still serving `/` until the homepage is
+ * built (docs/12 — the homepage is deliberately last). Its colours were
+ * literal black and white; they are now deep and air so the placeholder does
+ * not contradict the palette. It does not read tokens.css, which only loads
+ * under /[locale].
+ */
 :root {
   --font-mono: 'Roboto Mono', monospace;
+  --deep: #101720;
+  --air: #f2f1ee;
 }
 
 * {
@@ -10,7 +19,7 @@ html {
   font-size: 18px;
   line-height: 32px;
 
-  background: rgb(0, 0, 0);
+  background: var(--deep);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -26,7 +35,7 @@ body {
   line-height: 32px;
 
   margin: 0;
-  color: rgb(1000, 1000, 1000);
+  color: var(--air);
 
   @media (max-width: 1024px) {
     font-size: 15px;
@@ -128,15 +137,15 @@ svg {
     }
 
     .admin {
-      color: rgb(0, 0, 0);
-      background: rgb(1000, 1000, 1000);
-      border: 1px solid rgb(0, 0, 0);
+      color: var(--deep);
+      background: var(--air);
+      border: 1px solid var(--deep);
     }
 
     .docs {
-      color: rgb(1000, 1000, 1000);
-      background: rgb(0, 0, 0);
-      border: 1px solid rgb(1000, 1000, 1000);
+      color: var(--air);
+      background: var(--deep);
+      border: 1px solid var(--air);
     }
   }
 

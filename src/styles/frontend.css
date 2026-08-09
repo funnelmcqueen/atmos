@@ -293,7 +293,9 @@
   background: var(--surface-2);
 }
 .status-badge {
-  color: var(--surface);
+  /* --text, not --surface. This wants the light ink; it only read as one while
+     --surface was white. On the navy palette that would be navy on green. */
+  color: var(--text);
   border: none;
 }
 .status-badge--available {
@@ -533,6 +535,13 @@
   color: var(--accent-ink);
   border-color: var(--accent);
 }
+/* bronze-lift, the accent's only other state. Hover and active share it — the
+   palette defines one lifted tone, not two. */
+.btn--primary:hover,
+.btn--primary:active {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
 
 .dates {
   color: var(--muted);
@@ -733,7 +742,8 @@
    listing card's type pill sits, so a mixed grid still scans down one column. */
 .project-card .card__type {
   background: var(--type-project);
-  color: var(--surface);
+  /* Light ink on the phase pill — see .status-badge. */
+  color: var(--text);
 }
 
 /* --- Projects: detail ----------------------------------------------------- */

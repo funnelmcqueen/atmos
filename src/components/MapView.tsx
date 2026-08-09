@@ -110,11 +110,11 @@ export default function MapView({
     // match the badge palette and follow the active theme (CLAUDE.md rule 8).
     const css = getComputedStyle(containerRef.current)
     const token = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback
-    const colorSale = token('--type-sale', '#d1aa63')
-    const colorRent = token('--type-rent', '#5f8eae')
-    const colorCluster = token('--accent', '#c6a46d')
-    const colorClusterInk = token('--accent-ink', '#211f1a')
-    const colorStroke = token('--surface', '#ffffff')
+    const colorSale = token('--type-sale', '#536e93')
+    const colorRent = token('--type-rent', '#396f64')
+    const colorCluster = token('--accent', '#c8a882')
+    const colorClusterInk = token('--accent-ink', '#101720')
+    const colorStroke = token('--surface', '#212f42')
 
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 

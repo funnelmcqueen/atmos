@@ -28,9 +28,9 @@ const POINT_ZOOM = 15
 export type MarkerTone = 'sale' | 'rent' | 'project'
 
 const TONE_TOKENS: Record<MarkerTone, { name: string; fallback: string }> = {
-  sale: { name: '--type-sale', fallback: '#d1aa63' },
-  rent: { name: '--type-rent', fallback: '#5f8eae' },
-  project: { name: '--type-project', fallback: '#a46a9f' },
+  sale: { name: '--type-sale', fallback: '#536e93' },
+  rent: { name: '--type-rent', fallback: '#396f64' },
+  project: { name: '--type-project', fallback: '#7b5185' },
 }
 
 export default function PointMapView({

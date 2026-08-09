@@ -29,11 +29,16 @@ component, one file.
 
 ## One accent, two uses
 
-The brass in tokens.css marks exactly two things: the price and the primary
-action. Nothing else.
+The bronze in tokens.css marks exactly two things: the price and the primary
+action. Nothing else. `--accent-hover` (bronze-lift) is that accent's only other
+state, and belongs to the same two things.
 
 The moment a third element takes the accent, the price stops being the loudest
 thing on screen, and the price is what people came for.
+
+This is why badges and map markers are haze siblings rather than golds. A
+listing-type colour a few degrees off bronze does not read as a second accent —
+it reads as a mistake.
 
 Everything else is text, muted, surface, and line.
 

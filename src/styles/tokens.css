@@ -1,29 +1,64 @@
 /*
  * Atmos design tokens.
  *
- * The palette and type are the client-approved direction from the v3 visual
- * demo — graphite and light modes, brass accent, Georgia display. Do not
- * introduce colours outside this file, and do not redesign it.
+ * The palette is the client-approved navy and bronze direction. Six colours:
+ *
+ *   navy        #212f42  primary surface, header
+ *   deep        #101720  darkest ground, footer
+ *   bronze      #c8a882  accent — price and primary action only
+ *   bronze-lift #e0c9a6  hover and active state of bronze only
+ *   haze        #8a94a3  secondary text, badges, muted UI
+ *   air         #f2f1ee  light surface, primary text on dark
+ *
+ * Do not introduce colours outside this file, and do not redesign it. Pure
+ * white and pure black are banned everywhere in the codebase — air and deep
+ * stand in for both. (Written out rather than shown, so that grepping for the
+ * literals stays a clean way to check.)
+ *
+ * Values that are not one of the six are marked DERIVED. "Market status" still
+ * predates this palette: those three are semantic hues that have to stay
+ * distinguishable from each other, so they were left alone rather than guessed
+ * at.
  */
 
 :root {
-  /* Light mode */
-  --bg: #f4f1ea;
-  --surface: #ffffff;
-  --surface-2: #e8e5de;
-  --text: #222522;
-  --muted: #6d706c;
-  --line: #d4d0c6;
-  --accent: #c6a46d;
-  --accent-ink: #211f1a;
-  --header: rgba(244, 241, 234, 0.92);
-  --shadow: 0 18px 48px rgba(15, 18, 16, 0.12);
+  --bg: #101720; /* deep — the page ground */
+  --surface: #212f42; /* navy — cards, tables, panels */
+  /* deep again: every use is an inset within a navy card, or a panel that
+     carries its own --line border, so it reads as recessed rather than as the
+     page showing through. There is no sixth colour for a third surface. */
+  --surface-2: #101720;
+  --text: #f2f1ee; /* air */
+  --muted: #8a94a3; /* haze */
+  /* DERIVED — haze at 24%. Hairlines are muted UI, but none of the six works
+     neat: haze is far too bright for a 1px border and navy disappears against
+     the cards it would divide. */
+  --line: rgba(138, 148, 163, 0.24);
+  --accent: #c8a882; /* bronze */
+  --accent-hover: #e0c9a6; /* bronze-lift — hover and active on the accent only */
+  --accent-ink: #101720; /* deep — ink on bronze */
+  --header: rgba(33, 47, 66, 0.92); /* navy */
+  /* DERIVED — deep at 45%, replacing an rgba black. */
+  --shadow: 0 18px 48px rgba(16, 23, 32, 0.45);
 
-  /* Listing type — must match the map marker colours */
-  --type-sale: #d1aa63;
-  --type-rent: #5f8eae;
-  --type-daily: #7daa77;
-  --type-project: #a46a9f;
+  /*
+   * Listing type — must match the map marker colours.
+   *
+   * DERIVED: haze siblings. Muted like haze (saturation 24–32%), spread across
+   * the cool half of the wheel with nothing in the 30–60° gold band, because a
+   * gold here would sit a few degrees off bronze on the same card and read as a
+   * mistake — and because the accent belongs to the price and the primary
+   * action, never to a badge or a marker (docs/12-design.md).
+   *
+   * Lightness ladders as well as hue, so they stay separable in greyscale and
+   * for colour-blind readers rather than by hue alone. All four clear 4.5:1
+   * under air text, so any of them can carry a label; the old project violet
+   * managed only 3.6:1.
+   */
+  --type-sale: #536e93; /* slate — haze's own hue, 4.63:1 on air */
+  --type-rent: #396f64; /* teal, 5.12:1 */
+  --type-daily: #375d3c; /* green, 6.66:1 — no usage yet, daily is out of v1 */
+  --type-project: #7b5185; /* violet, 5.54:1 */
 
   /* Market status */
   --status-available: #5d7f69;
@@ -58,16 +93,13 @@
   --header-height: 76px;
 }
 
-html[data-theme='graphite'] {
-  --bg: #1e211f;
-  --surface: #272a28;
-  --surface-2: #232624;
-  --text: #f4f1e9;
-  --muted: #aaa9a2;
-  --line: #3a3e3b;
-  --header: rgba(25, 28, 26, 0.93);
-  --shadow: 0 20px 55px rgba(0, 0, 0, 0.28);
-}
+/*
+ * The `html[data-theme='graphite']` override was removed with this palette.
+ * Nothing ever set `data-theme`, so it had never rendered; it held the old
+ * graphite values, so activating it would have restored the pre-bronze
+ * colours; and its shadow was the codebase's last pure black. :root is the
+ * dark direction now, which leaves a second dark theme with nothing to do.
+ */
 
 @media (prefers-reduced-motion: reduce) {
   *,

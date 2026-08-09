@@ -10,14 +10,24 @@
  * Light mode only, and deliberately plain. These are working documents an agent
  * reads on a phone between viewings, not marketing.
  */
+/*
+ * The navy palette, read as a light document. Emails stay light: a dark HTML
+ * email is repainted or inverted by enough clients that it is not worth it, and
+ * these are working documents read on a phone between viewings.
+ *
+ * `air` is the only light colour in the palette, so the page and the card are
+ * now one tone rather than two — the card is held by its border instead of by
+ * contrast. `line` is the flattened equivalent of the site's `--line`
+ * (haze at 24% over air); email clients cannot be trusted with rgba borders.
+ */
 export const colors = {
-  bg: '#f4f1ea',
-  surface: '#ffffff',
-  text: '#222522',
-  muted: '#6d706c',
-  line: '#d4d0c6',
-  accent: '#c6a46d',
-  accentInk: '#211f1a',
+  bg: '#f2f1ee', // air
+  surface: '#f2f1ee', // air
+  text: '#101720', // deep
+  muted: '#8a94a3', // haze
+  line: '#d9dbdc', // haze @ 24% over air, flattened
+  accent: '#c8a882', // bronze
+  accentInk: '#101720', // deep
 } as const
 
 export const body = {
