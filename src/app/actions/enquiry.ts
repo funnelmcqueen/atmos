@@ -128,7 +128,12 @@ export async function submitEnquiry(
     sourceLabel: target.label,
     sourcePath: target.path,
   })
-  if (!result.sent && !result.skipped) {
+  if (result.sent) {
+    // Logged on success too, not just failure: "did the agent get it?" is the
+    // first question after a lead goes cold, and silence in the log is not an
+    // answer. The id looks the message up in the Resend dashboard.
+    console.info(`[enquiry] ${enquiryId} notified ${target.email} (resend ${result.id})`)
+  } else if (!result.skipped) {
     console.warn(`[enquiry] ${enquiryId} stored but notification failed: ${result.error}`)
   }
 

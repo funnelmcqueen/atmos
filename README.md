@@ -43,9 +43,14 @@ DATABASE_URL=              # Neon pooled connection string
 PAYLOAD_SECRET=            # openssl rand -hex 32
 BLOB_READ_WRITE_TOKEN=     # Vercel Blob
 NEXT_PUBLIC_MAPTILER_KEY=
+NEXT_PUBLIC_SITE_URL=https://atmos.al   # canonicals, JSON-LD, email links
 RESEND_API_KEY=
-NEXT_PUBLIC_SITE_URL=https://atmos.al
+RESEND_FROM=Atmos <onboarding@resend.dev>   # test sender until atmos.al is verified
+RESEND_OVERRIDE_TO=        # redirect all mail here; required with the test sender
+ATMOS_INBOX_EMAIL=         # shared triage queue for unassigned leads
 ```
+
+See `.env.example` for the full list and what each one does.
 
 ## Scripts to add to package.json
 

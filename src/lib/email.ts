@@ -28,7 +28,15 @@ import { ListingRequestNotification } from '@/emails/ListingRequestNotification'
  */
 const isStubbed = (): boolean => process.env.ATMOS_EMAIL_TRANSPORT === 'stub'
 
-const FROM = process.env.ATMOS_FROM_EMAIL ?? 'Atmos <njoftime@atmos.al>'
+/**
+ * The sender address.
+ *
+ * Defaults to Resend's shared test sender, which needs no domain verification —
+ * so the delivery path works from a fresh checkout. Switching to
+ * `noreply@atmos.al` once the domain is verified is one environment variable,
+ * not a deploy of new code.
+ */
+const FROM = process.env.RESEND_FROM ?? 'Atmos <onboarding@resend.dev>'
 
 /** The shared triage queue: anything with no agent lands here. */
 const INBOX = process.env.ATMOS_INBOX_EMAIL ?? 'info@atmos.al'
@@ -36,10 +44,33 @@ const INBOX = process.env.ATMOS_INBOX_EMAIL ?? 'info@atmos.al'
 /** Admin bcc on every notification, per the slice brief. */
 const ADMIN_BCC = process.env.ATMOS_ADMIN_EMAIL ?? INBOX
 
+/**
+ * Redirect every notification to one address, whatever the routing decided.
+ *
+ * Two reasons this exists, and both are about not lying to people:
+ *
+ * 1. **Resend's test sender only delivers to the account owner.** While
+ *    `onboarding@resend.dev` is the sender, a mail to a seeded agent at
+ *    `seed-agent@atmos.al` is rejected outright — so the only way to prove the
+ *    delivery path before domain verification is to send everything to the
+ *    account owner's own address.
+ * 2. **Staging must not email real agents.** A staging deploy pointed at a copy
+ *    of production data would otherwise send live-looking leads to the client's
+ *    staff the first time someone tested a form.
+ *
+ * The intended recipient is preserved in the subject when this is on, so a
+ * redirected message still shows what routing *would* have done. Leave it unset
+ * in production.
+ */
+const OVERRIDE_TO = process.env.RESEND_OVERRIDE_TO?.trim() || null
+
 export interface SendResult {
   sent: boolean
   skipped?: 'stubbed' | 'no-api-key'
   error?: string
+  /** Resend's message id. The only handle that ties a lead in the admin to a
+   *  message in the Resend dashboard when someone asks "was this sent?". */
+  id?: string
 }
 
 const send = async (args: {
@@ -53,18 +84,26 @@ const send = async (args: {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) return { sent: false, skipped: 'no-api-key' }
 
+  // When redirecting, the real recipient goes in the subject rather than being
+  // lost — otherwise every test message looks identical and the routing this
+  // slice exists to prove is invisible. The bcc is dropped too: copying an
+  // admin on a redirected message would defeat the point of redirecting.
+  const to = OVERRIDE_TO ?? args.to
+  const subject = OVERRIDE_TO ? `[→ ${args.to}] ${args.subject}` : args.subject
+  const bcc = OVERRIDE_TO || ADMIN_BCC === to ? undefined : ADMIN_BCC
+
   try {
     const resend = new Resend(apiKey)
-    const { error } = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: FROM,
-      to: args.to,
-      bcc: ADMIN_BCC === args.to ? undefined : ADMIN_BCC,
+      to,
+      bcc,
       replyTo: args.replyTo,
-      subject: args.subject,
+      subject,
       react: args.react,
     })
     if (error) return { sent: false, error: error.message }
-    return { sent: true }
+    return { sent: true, id: data?.id }
   } catch (err) {
     return { sent: false, error: err instanceof Error ? err.message : String(err) }
   }

@@ -11,10 +11,25 @@ import type { PropertyDetail } from '@/lib/property-detail'
 import type { ProjectDetail, UnitDetail } from '@/lib/projects'
 import type { ListingCard } from '@/lib/listings'
 
-export const SITE_URL = (process.env.NEXT_PUBLIC_SERVER_URL ?? 'http://localhost:3000').replace(
-  /\/$/,
-  '',
-)
+/**
+ * The site's absolute base URL.
+ *
+ * Reads `NEXT_PUBLIC_SITE_URL` — the name `.env.example` and the README have
+ * always documented. This used to read `NEXT_PUBLIC_SERVER_URL`, which nothing
+ * ever set, so it silently fell through to localhost: every canonical, every
+ * hreflang alternate and every JSON-LD `url` on the deployed site pointed at
+ * `http://localhost:3000`. Invisible locally, because there the fallback is
+ * correct. The notification emails are what surfaced it — a lead arriving with
+ * a localhost link is hard to miss.
+ *
+ * `NEXT_PUBLIC_SERVER_URL` is still honoured as a fallback so an environment
+ * already setting the old name does not regress on deploy.
+ */
+export const SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  process.env.NEXT_PUBLIC_SERVER_URL ??
+  'http://localhost:3000'
+).replace(/\/$/, '')
 
 /** Absolute URL for a locale-prefixed path, e.g. ('sq', '/prona') → …/sq/prona. */
 export const localeUrl = (locale: string, path: string): string =>

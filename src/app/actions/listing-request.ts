@@ -181,7 +181,9 @@ export async function submitListingRequest(
     hasDocumentation,
     description: description || null,
   })
-  if (!result.sent && !result.skipped) {
+  if (result.sent) {
+    console.info(`[listing-request] ${requestId} notified (resend ${result.id})`)
+  } else if (!result.skipped) {
     console.warn(`[listing-request] ${requestId} stored but notification failed: ${result.error}`)
   }
 

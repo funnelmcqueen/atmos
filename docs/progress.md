@@ -60,6 +60,17 @@
 
 ---
 
+## Email delivery proven — 9 Aug 2026
+
+- **Built:** Sender is now `RESEND_FROM`, defaulting to Resend's shared test sender `onboarding@resend.dev` so the delivery path works with no domain verification; switching to `noreply@atmos.al` is one variable. Added `RESEND_OVERRIDE_TO`, which redirects every notification to one address and puts the intended recipient in the subject as `[→ agent@…]`. That is not only for this test: the shared test sender can *only* deliver to the Resend account owner, and a staging deploy pointed at production-shaped data would otherwise email the client's real agents the first time someone tried a form. Successful sends now log the Resend message id, so "was this lead sent?" has an answer that is not silence.
+- **Proven:** A real enquiry submitted through the running production build reached Resend — `[enquiry] 26 notified seed-agent@atmos.al (resend 0c7a9b34-…)`, redirected to the account owner. Both routing paths were exercised: a property (assigned agent) and Laprakë Garden (unassigned → shared inbox). The failure path proved itself first: the initial attempt was rejected with Resend's "you can only send testing emails to your own email address", the enquiry was still stored, and the submission still succeeded — exactly the "email failure never fails a lead" design.
+- **Broke:** A pre-existing bug the emails exposed. `lib/seo.ts` read `NEXT_PUBLIC_SERVER_URL`; `.env.example` and the README both document `NEXT_PUBLIC_SITE_URL`. Nothing set the former, so `SITE_URL` silently fell back to `http://localhost:3000` — meaning every canonical, hreflang alternate and JSON-LD `url` on a deployed site pointed at localhost. Invisible locally, because there the fallback is right. A notification email carrying a localhost link is what made it obvious. Now reads `NEXT_PUBLIC_SITE_URL`, with the old name honoured as a fallback so nothing regresses on deploy.
+- **Fixed the flaky admin spec.** Its `beforeAll` had a 30s default while the first request to `/admin/login` takes ~23s to compile on a cold `next dev` — measured, not guessed — and the hook also seeds a user and opens a browser before navigating. So the block passed or failed depending on what ran before it, and the margin shrinks as the app grows. Now `testInfo.setTimeout(180_000)` inside the hook: a describe-level `test.setTimeout` would not have worked, because it applies to tests and not to `beforeAll`. Verified against a cold server with `.next/cache` cleared.
+- **Not done:** the send was through a local production build, **not the deployed site** — there is no `.vercel` link, no Vercel CLI, and no deployment URL in the repo, so there was nothing to submit against. The code path is identical; what is unproven is the Vercel environment wiring.
+- **Verified:** `typecheck`, `lint` (0 errors), `check:routes` (16 routes), `test:e2e` 45/45 from a cold start.
+
+---
+
 # Known quirks
 
 Things that look like bugs, are not, and cost someone an hour already. Add to
@@ -90,13 +101,24 @@ speed, not the app.
 **Do not** "fix" this by removing the Suspense boundaries or turning
 `cacheComponents` off — see `docs/13-caching.md`.
 
-## Playwright's first admin request can exceed the 30s hook timeout
+## Playwright's first admin request is slow to compile — fixed, but know why
 
-The admin spec's `beforeAll` occasionally times out on a cold dev server and
-passes on a warm one. This predates `cacheComponents` and is already explained in
-`playwright.config.ts` — the Payload admin bundle is expensive to compile on
-first request. It is not a Payload/cacheComponents conflict; the admin builds and
-runs fine (`◐` in the route table). Re-run before investigating.
+**Resolved 9 Aug 2026.** The admin spec's `beforeAll` used to time out on a cold
+dev server and pass on a warm one, so the whole describe block's result depended
+on what ran before it.
+
+The cause is not a bug: the first request to `/admin/login` takes ~23 seconds to
+compile the Payload admin bundle under `next dev`, against a 30s default hook
+timeout that also has to seed a user and open a browser context. The hook now
+sets its own 180s budget. It must be `testInfo.setTimeout()` *inside* the hook —
+a describe-level `test.setTimeout()` applies to the tests, not to `beforeAll`.
+
+If it ever returns, measure the compile before touching anything else:
+
+    curl -o /dev/null -w '%{time_total}
+' http://localhost:3000/admin/login
+
+against a freshly started dev server.
 
 ## `pnpm seed` wipes attached photos
 
